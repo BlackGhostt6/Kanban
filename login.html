@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f6f7f5">
+  <meta name="description" content="Entre no Dayboard e organize suas tarefas.">
+  <title>Entrar | Dayboard</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/login.css">
+  <script src="js/storage.js" defer></script>
+  <script src="js/auth.js" defer></script>
+</head>
+<body class="login-page">
+  <header class="login-topbar">
+    <a class="brand login-brand" href="login.html" aria-label="Dayboard, página de acesso">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M5 6.5h5.5v11H5zM13.5 6.5H19v6h-5.5zM13.5 15h5.5v2.5h-5.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+      </span>
+      <span class="brand-name">dayboard</span>
+    </a>
+    <a class="back-link" href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m14.5 5-7 7 7 7M8 12h11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Voltar ao início
+    </a>
+  </header>
+
+  <main class="login-layout">
+    <section class="login-showcase" aria-label="Organização simples do seu trabalho">
+      <div class="showcase-kicker"><span></span> SEU ESPAÇO, NO SEU RITMO</div>
+      <h1>Clareza para<br>o que vem a seguir.</h1>
+      <p>Reúna suas tarefas em um só lugar e mantenha cada ideia em movimento.</p>
+      <div class="mini-board" aria-hidden="true">
+        <div class="mini-column"><span class="mini-column-label"><i></i> A Fazer</span><span class="mini-task"></span><span class="mini-task short"></span></div>
+        <div class="mini-column"><span class="mini-column-label amber"><i></i> Em curso</span><span class="mini-task"></span><span class="mini-task long"></span></div>
+        <div class="mini-column"><span class="mini-column-label green"><i></i> Feito</span><span class="mini-task short"></span></div>
+      </div>
+      <span class="showcase-note">Um quadro mais leve começa por aqui.</span>
+    </section>
+
+    <section class="login-panel" id="login-card" aria-label="Acesso à conta">
+      <div class="mobile-brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M5 6.5h5.5v11H5zM13.5 6.5H19v6h-5.5zM13.5 15h5.5v2.5h-5.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+      </div>
+      <p class="auth-message" id="auth-message" role="status" aria-live="polite" hidden></p>
+      <div id="login-panel">
+        <p class="panel-eyebrow">SEU ESPAÇO DE TRABALHO</p>
+        <h2>Bem-vindo de volta!</h2>
+        <p class="panel-subtitle">Entre para continuar de onde parou.</p>
+        <form class="auth-form" id="login-form">
+          <div class="auth-field">
+            <label for="login-identifier">E-mail ou nome de usuário</label>
+            <input id="login-identifier" name="identifier" type="text" placeholder="voce@exemplo.com" autocomplete="username" required>
+          </div>
+          <div class="auth-field">
+            <label for="login-password">Senha</label>
+            <div class="password-wrap">
+              <input id="login-password" name="password" type="password" placeholder="Sua senha" autocomplete="current-password" required>
+              <button class="password-toggle" type="button" data-toggle-password="login-password" aria-label="Mostrar senha" aria-pressed="false">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2.8 12s3.2-6 9.2-6 9.2 6 9.2 6-3.2 6-9.2 6-9.2-6-9.2-6Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.6"/></svg>
+              </button>
+            </div>
+          </div>
+          <button class="primary-button auth-submit" type="submit">
+            <span>Entrar</span>
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </form>
+        <p class="switch-prompt">Ainda não tem uma conta? <button class="text-button" id="show-register" type="button">Criar conta</button></p>
+      </div>
+
+      <div id="register-panel" hidden>
+        <p class="panel-eyebrow">COMECE POR AQUI</p>
+        <h2>Crie sua conta</h2>
+        <p class="panel-subtitle">Seus dados ficam salvos neste navegador.</p>
+        <form class="auth-form register-form" id="register-form">
+          <div class="auth-field">
+            <label for="register-name">Nome</label>
+            <input id="register-name" name="name" type="text" minlength="2" maxlength="80" placeholder="Como podemos chamar você?" autocomplete="name" required>
+          </div>
+          <div class="auth-field">
+            <label for="register-email">E-mail</label>
+            <input id="register-email" name="email" type="email" maxlength="254" placeholder="voce@exemplo.com" autocomplete="email" required>
+          </div>
+          <div class="auth-field">
+            <label for="register-username">Nome de usuário</label>
+            <input id="register-username" name="username" type="text" minlength="3" maxlength="30" pattern="[A-Za-z0-9._\-]{3,30}" title="Use de 3 a 30 letras, números, ponto, hífen ou sublinhado." placeholder="seu.usuario" autocomplete="username" required>
+          </div>
+          <div class="auth-field">
+            <label for="register-password">Senha <span class="field-hint">(mínimo de 8 caracteres)</span></label>
+            <div class="password-wrap">
+              <input id="register-password" name="password" type="password" minlength="8" maxlength="128" placeholder="Crie uma senha" autocomplete="new-password" required>
+              <button class="password-toggle" type="button" data-toggle-password="register-password" aria-label="Mostrar senha" aria-pressed="false">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2.8 12s3.2-6 9.2-6 9.2 6 9.2 6-3.2 6-9.2 6-9.2-6-9.2-6Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.6"/></svg>
+              </button>
+            </div>
+          </div>
+          <button class="primary-button auth-submit" type="submit">
+            <span>Criar conta</span>
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </form>
+        <p class="switch-prompt">Já tem uma conta? <button class="text-button" id="show-login" type="button">Entrar</button></p>
+      </div>
+
+      <aside class="local-notice" aria-label="Aviso sobre a demonstração">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5 4 7v5.2c0 4.4 3.1 7.3 8 8.3 4.9-1 8-3.9 8-8.3V7l-8-3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 8v4m0 3h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <p><strong>Acesso demonstrativo.</strong> Contas e tarefas ficam neste navegador. Não use uma senha real ou reutilizada. Este login não protege informações contra quem acessa o site ou o dispositivo.</p>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>

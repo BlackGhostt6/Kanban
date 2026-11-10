@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f6f7f5">
+  <title>Dayboard | Seu espaço de trabalho</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand" aria-label="Dayboard, espaço de trabalho">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M5 6.5h5.5v11H5zM13.5 6.5H19v6h-5.5zM13.5 15h5.5v2.5h-5.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="brand-name">dayboard</span>
+        <span class="workspace-label">Olá, <span id="welcome-name">Você</span>!</span>
+      </div>
+      <div class="topbar-right">
+        <span class="save-indicator"><span class="save-dot" aria-hidden="true"></span><span>Salvo neste dispositivo</span></span>
+        <span class="avatar" id="user-avatar" aria-label="Perfil do usuário">VC</span>
+        <button class="logout-button" id="logout-button" type="button" aria-label="Sair da conta">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 5H6.5A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19H10M14 8l4 4-4 4m4-4H9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Sair
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-heading" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow" id="today-label">SEU ESPAÇO DE TRABALHO</p>
+          <h1 id="page-title">Quadro de tarefas</h1>
+          <p class="subtitle">Um passo de cada vez. Seu trabalho, sempre em movimento.</p>
+        </div>
+        <button class="primary-button" id="add-task-button" type="button">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Adicionar Nova Tarefa
+        </button>
+      </section>
+
+      <div class="board-summary" aria-live="polite">
+        <span id="task-summary">0 tarefas no quadro</span><span class="summary-rule" aria-hidden="true"></span><span>Arraste para organizar</span>
+      </div>
+
+      <section class="board" aria-label="Quadro Kanban">
+        <section class="column" data-status="todo" aria-labelledby="title-todo">
+          <header class="column-header">
+            <div class="column-title-wrap"><span class="column-indicator" aria-hidden="true"></span><h2 id="title-todo">A Fazer</h2></div>
+            <span class="count" data-count="todo" aria-label="0 tarefas">0</span>
+          </header>
+          <div class="cards" data-cards="todo" aria-label="Tarefas a fazer"></div>
+          <button class="column-add" type="button" data-open-modal>
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Adicionar tarefa
+          </button>
+        </section>
+
+        <section class="column" data-status="progress" aria-labelledby="title-progress">
+          <header class="column-header">
+            <div class="column-title-wrap"><span class="column-indicator" aria-hidden="true"></span><h2 id="title-progress">Em Andamento</h2></div>
+            <span class="count" data-count="progress" aria-label="0 tarefas">0</span>
+          </header>
+          <div class="cards" data-cards="progress" aria-label="Tarefas em andamento"></div>
+          <button class="column-add" type="button" data-open-modal>
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Adicionar tarefa
+          </button>
+        </section>
+
+        <section class="column" data-status="done" aria-labelledby="title-done">
+          <header class="column-header">
+            <div class="column-title-wrap"><span class="column-indicator" aria-hidden="true"></span><h2 id="title-done">Concluído</h2></div>
+            <span class="count" data-count="done" aria-label="0 tarefas">0</span>
+          </header>
+          <div class="cards" data-cards="done" aria-label="Tarefas concluídas"></div>
+          <button class="column-add" type="button" data-open-modal>
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Adicionar tarefa
+          </button>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="task-modal" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-description">
+      <div class="modal-heading">
+        <div><h2 id="modal-title">Nova tarefa</h2><p class="modal-intro" id="modal-description">Registre o próximo passo do seu trabalho.</p></div>
+        <button class="icon-button" id="close-modal-button" type="button" aria-label="Fechar">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <form id="task-form">
+        <div class="form-field">
+          <label for="task-title">Título da tarefa <span aria-hidden="true">*</span></label>
+          <input id="task-title" name="title" type="text" maxlength="120" placeholder="Ex.: Preparar apresentação" required autocomplete="off">
+        </div>
+        <div class="form-field">
+          <label for="task-description">Descrição <span class="optional">(opcional)</span></label>
+          <textarea id="task-description" name="description" maxlength="600" placeholder="Adicione detalhes para não perder o fio..."></textarea>
+        </div>
+        <div class="modal-actions">
+          <button class="secondary-button" id="cancel-modal-button" type="button">Cancelar</button>
+          <button class="primary-button" type="submit">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span id="task-submit-label">Salvar Tarefa</span>
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="js/storage.js" defer></script>
+  <script src="js/auth.js" defer></script>
+  <script src="js/kanban.js" defer></script>
+</body>
+</html>
