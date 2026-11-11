@@ -1,4 +1,4 @@
-    (() => {
+    (async () => {
       "use strict";
 
       const STATUSES = ["todo", "progress", "done"];
@@ -9,10 +9,11 @@
         done: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.7"/><path d="m8.5 12 2.2 2.2 4.8-4.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'
       };
 
-      const currentUser = window.KanbanAuth.requireSession();
+      const currentUser = await window.KanbanAuth.requireSession();
       if (!currentUser) return;
 
       const board = document.querySelector(".board");
+      document.getElementById("task-summary").textContent = "Carregando suas tarefas...";
       const taskForm = document.getElementById("task-form");
       const modal = document.getElementById("task-modal");
       const titleInput = document.getElementById("task-title");
@@ -21,17 +22,13 @@
       const modalDescription = document.getElementById("modal-description");
       const submitLabel = document.getElementById("task-submit-label");
       const toastRegion = document.getElementById("toast-region");
-      let tasks = window.KanbanStorage.getTasks(currentUser.id);
+      let tasks = await window.KanbanStorage.getTasks();
       let draggedTaskId = null;
       let editingTaskId = null;
       let lastFocusedElement = null;
 
-      function persistTasks() {
-        if (!window.KanbanStorage.saveTasks(currentUser.id, tasks)) {
-          showToast("Não foi possível salvar. Verifique o espaço disponível no navegador.", true);
-          return false;
-        }
-        return true;
+      function setSyncStatus(status) {
+        document.getElementById("save-indicator-label").textContent = status;
       }
 
       function escapeHTML(value) {
@@ -172,54 +169,83 @@
         }, 2800);
       }
 
-      function addTask(title, description) {
-        tasks.unshift({
-          id: window.crypto && typeof window.crypto.randomUUID === "function"
-            ? window.crypto.randomUUID()
-            : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-          title,
-          description,
-          status: "todo",
-          createdAt: new Date().toISOString()
-        });
-        persistTasks();
-        renderBoard();
-        showToast("Tarefa adicionada em A Fazer.");
+      async function addTask(title, description) {
+        setSyncStatus("Salvando...");
+        try {
+          const task = await window.KanbanStorage.createTask({ title, description, status: "todo" });
+          tasks.unshift(task);
+          renderBoard();
+          setSyncStatus("Sincronizado na nuvem");
+          showToast("Tarefa adicionada em A Fazer.");
+          return true;
+        } catch (error) {
+          setSyncStatus("Falha na sincronização");
+          showToast(`Não foi possível adicionar a tarefa: ${error.message}`, true);
+          return false;
+        }
       }
 
-      function updateTask(taskId, title, description) {
+      async function updateTask(taskId, title, description) {
         const task = tasks.find(item => item.id === taskId);
-        if (!task) return;
-        task.title = title;
-        task.description = description;
-        persistTasks();
-        renderBoard();
-        showToast("Tarefa atualizada.");
+        if (!task) return false;
+        setSyncStatus("Salvando...");
+        try {
+          const updatedTask = await window.KanbanStorage.updateTask(taskId, { title, description });
+          tasks = tasks.map(item => item.id === taskId ? updatedTask : item);
+          renderBoard();
+          setSyncStatus("Sincronizado na nuvem");
+          showToast("Tarefa atualizada.");
+          return true;
+        } catch (error) {
+          setSyncStatus("Falha na sincronização");
+          showToast(`Não foi possível atualizar a tarefa: ${error.message}`, true);
+          return false;
+        }
       }
 
-      function deleteTask(taskId) {
+      async function deleteTask(taskId) {
         const task = tasks.find(item => item.id === taskId);
         if (!task || !window.confirm(`Excluir a tarefa “${task.title}”?`)) return;
-        tasks = tasks.filter(item => item.id !== taskId);
-        persistTasks();
-        renderBoard();
-        showToast("Tarefa excluída.");
+        setSyncStatus("Salvando...");
+        try {
+          await window.KanbanStorage.deleteTask(taskId);
+          tasks = tasks.filter(item => item.id !== taskId);
+          renderBoard();
+          setSyncStatus("Sincronizado na nuvem");
+          showToast("Tarefa excluída.");
+        } catch (error) {
+          setSyncStatus("Falha na sincronização");
+          showToast(`Não foi possível excluir a tarefa: ${error.message}`, true);
+        }
       }
 
-      function moveTask(taskId, nextStatus) {
+      async function moveTask(taskId, nextStatus) {
         if (!STATUSES.includes(nextStatus)) return;
         const task = tasks.find(item => item.id === taskId);
         if (!task || task.status === nextStatus) return;
-        task.status = nextStatus;
-        persistTasks();
-        renderBoard();
-        showToast(`Tarefa movida para ${STATUS_LABELS[nextStatus]}.`);
+        setSyncStatus("Salvando...");
+        try {
+          const updatedTask = await window.KanbanStorage.updateTask(taskId, { status: nextStatus });
+          tasks = tasks.map(item => item.id === taskId ? updatedTask : item);
+          renderBoard();
+          setSyncStatus("Sincronizado na nuvem");
+          showToast(`Tarefa movida para ${STATUS_LABELS[nextStatus]}.`);
+        } catch (error) {
+          setSyncStatus("Falha na sincronização");
+          showToast(`Não foi possível mover a tarefa: ${error.message}`, true);
+        }
       }
 
       document.getElementById("welcome-name").textContent = currentUser.name;
       document.getElementById("user-avatar").textContent = currentUser.name
         .split(/\s+/).slice(0, 2).map(part => part.charAt(0)).join("").toLocaleUpperCase("pt-BR");
-      document.getElementById("logout-button").addEventListener("click", window.KanbanAuth.logout);
+      document.getElementById("logout-button").addEventListener("click", async () => {
+        try {
+          await window.KanbanAuth.logout();
+        } catch (error) {
+          showToast(`Não foi possível encerrar a sessão: ${error.message}`, true);
+        }
+      });
       document.getElementById("add-task-button").addEventListener("click", () => openModal());
       document.querySelectorAll("[data-open-modal]").forEach(button => button.addEventListener("click", () => openModal()));
       document.getElementById("close-modal-button").addEventListener("click", closeModal);
@@ -229,7 +255,7 @@
         if (event.key === "Escape" && !modal.hidden) closeModal();
       });
 
-      taskForm.addEventListener("submit", event => {
+      taskForm.addEventListener("submit", async event => {
         event.preventDefault();
         if (!taskForm.reportValidity()) return;
         const title = titleInput.value.trim();
@@ -240,9 +266,13 @@
         }
         titleInput.setCustomValidity("");
         const description = descriptionInput.value.trim();
-        if (editingTaskId) updateTask(editingTaskId, title, description);
-        else addTask(title, description);
-        closeModal();
+        const submitButton = taskForm.querySelector("button[type='submit']");
+        submitButton.disabled = true;
+        const saved = editingTaskId
+          ? await updateTask(editingTaskId, title, description)
+          : await addTask(title, description);
+        submitButton.disabled = false;
+        if (saved) closeModal();
       });
       titleInput.addEventListener("input", () => titleInput.setCustomValidity(""));
 
@@ -267,4 +297,11 @@
       });
 
       renderBoard();
-    })();
+      setSyncStatus("Sincronizado na nuvem");
+    })().catch(error => {
+      console.error("Não foi possível carregar o quadro.", error);
+      const summary = document.getElementById("task-summary");
+      if (summary) summary.textContent = "Não foi possível carregar as tarefas. Verifique a conexão e atualize a página.";
+      const syncStatus = document.getElementById("save-indicator-label");
+      if (syncStatus) syncStatus.textContent = "Falha na sincronização";
+    });

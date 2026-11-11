@@ -8,7 +8,8 @@
   <title>Entrar | Dayboard</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/login.css">
-  <script src="js/storage.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="js/supabase-config.js" defer></script>
   <script src="js/auth.js" defer></script>
 </head>
 <body class="login-page">
@@ -46,11 +47,11 @@
       <div id="login-panel">
         <p class="panel-eyebrow">SEU ESPAÇO DE TRABALHO</p>
         <h2>Bem-vindo de volta!</h2>
-        <p class="panel-subtitle">Entre para continuar de onde parou.</p>
+        <p class="panel-subtitle">Entre com seu e-mail para continuar de onde parou.</p>
         <form class="auth-form" id="login-form">
           <div class="auth-field">
-            <label for="login-identifier">E-mail ou nome de usuário</label>
-            <input id="login-identifier" name="identifier" type="text" placeholder="voce@exemplo.com" autocomplete="username" required>
+            <label for="login-identifier">E-mail</label>
+            <input id="login-identifier" name="identifier" type="email" placeholder="voce@exemplo.com" autocomplete="email" required>
           </div>
           <div class="auth-field">
             <label for="login-password">Senha</label>
@@ -72,7 +73,7 @@
       <div id="register-panel" hidden>
         <p class="panel-eyebrow">COMECE POR AQUI</p>
         <h2>Crie sua conta</h2>
-        <p class="panel-subtitle">Seus dados ficam salvos neste navegador.</p>
+        <p class="panel-subtitle">Suas tarefas ficam sincronizadas com segurança na nuvem.</p>
         <form class="auth-form register-form" id="register-form">
           <div class="auth-field">
             <label for="register-name">Nome</label>
