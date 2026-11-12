@@ -248,6 +248,37 @@ create trigger create_profile_after_signup
   after insert on auth.users
   for each row execute function public.create_profile_for_new_user();
 
+-- These privileged checks avoid recursive RLS evaluation across boards and memberships.
+create or replace function public.is_board_owner(target_board_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.boards b
+    where b.id = target_board_id
+      and b.owner_id = (select auth.uid())
+  );
+$$;
+
+create or replace function public.is_board_member(target_board_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.board_members bm
+    where bm.board_id = target_board_id
+      and bm.user_id = (select auth.uid())
+  );
+$$;
+
 create or replace function public.is_username_available(candidate text)
 returns boolean
 language sql
@@ -264,6 +295,10 @@ $$;
 
 revoke all on function public.is_username_available(text) from public;
 grant execute on function public.is_username_available(text) to anon, authenticated;
+revoke all on function public.is_board_owner(uuid) from public, anon, authenticated;
+grant execute on function public.is_board_owner(uuid) to authenticated;
+revoke all on function public.is_board_member(uuid) from public, anon, authenticated;
+grant execute on function public.is_board_member(uuid) to authenticated;
 
 alter table public.profiles enable row level security;
 alter table public.boards enable row level security;
@@ -313,27 +348,19 @@ create policy "Users can manage their boards"
 drop policy if exists "Members can view shared boards" on public.boards;
 create policy "Members can view shared boards"
   on public.boards for select to authenticated
-  using (
-    exists (
-      select 1 from public.board_members bm
-      where bm.board_id = public.boards.id and bm.user_id = (select auth.uid())
-    )
-    or owner_id = (select auth.uid())
-  );
+  using (public.is_board_member(id));
 
 drop policy if exists "Board members can manage membership" on public.board_members;
-create policy "Board members can manage membership"
+drop policy if exists "Board owners can manage membership" on public.board_members;
+create policy "Board owners can manage membership"
   on public.board_members for all to authenticated
-  using (
-    board_id in (
-      select b.id from public.boards b where b.owner_id = (select auth.uid())
-    )
-    or user_id = (select auth.uid())
-  )
-  with check (
-    (board_id in (select b.id from public.boards b where b.owner_id = (select auth.uid())))
-    or user_id = (select auth.uid())
-  );
+  using (public.is_board_owner(board_id))
+  with check (public.is_board_owner(board_id));
+
+drop policy if exists "Users can view their own board membership" on public.board_members;
+create policy "Users can view their own board membership"
+  on public.board_members for select to authenticated
+  using (user_id = (select auth.uid()));
 
 drop policy if exists "Board columns are viewable by members" on public.board_columns;
 create policy "Board columns are viewable by members"

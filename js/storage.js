@@ -47,6 +47,21 @@
     };
   }
 
+  async function getProfilesByIds(client, userIds) {
+    const ids = [...new Set(userIds.filter(Boolean))];
+    if (!ids.length) return new Map();
+
+    const { data, error } = await client
+      .from("profiles")
+      .select("id, name, username")
+      .in("id", ids);
+    throwIfError(error);
+    return new Map((data || []).map(profile => [
+      profile.id,
+      { name: profile.name, username: profile.username }
+    ]));
+  }
+
   async function ensureDefaultBoard() {
     const client = getClient();
     const { data: userData, error: userError } = await client.auth.getUser();
@@ -162,10 +177,11 @@
     const client = getClient();
     const { data, error } = await client
       .from("board_members")
-      .select("id, board_id, user_id, email, role, invited_by, created_at, profiles:user_id(name, username)")
+      .select("id, board_id, user_id, email, role, invited_by, created_at")
       .eq("board_id", boardId)
       .order("created_at", { ascending: false });
     throwIfError(error);
+    const profiles = await getProfilesByIds(client, (data || []).map(row => row.user_id));
     return (data || []).map(row => ({
       id: row.id,
       boardId: row.board_id,
@@ -173,7 +189,7 @@
       email: row.email,
       role: row.role,
       createdAt: row.created_at,
-      profile: row.profiles ? { name: row.profiles.name, username: row.profiles.username } : null
+      profile: profiles.get(row.user_id) || null
     }));
   }
 
@@ -329,13 +345,13 @@
     const client = getClient();
     const { data: taskRow, error: taskError } = await client
       .from("tasks")
-      .select("id, board_id, user_id, title, description, status, due_date, priority, assignee_id, story_points, sprint_id, backlog, created_at, updated_at, profiles!assignee_id(name, username)")
+      .select("id, board_id, user_id, title, description, status, due_date, priority, assignee_id, story_points, sprint_id, backlog, created_at, updated_at")
       .eq("id", taskId)
       .single();
     throwIfError(taskError);
 
     const [comments, checklist, labels, activities, acceptanceCriteria, definitionOfDone] = await Promise.all([
-      client.from("task_comments").select("id, task_id, user_id, content, created_at, profiles:user_id(name, username)").eq("task_id", taskId).order("created_at", { ascending: true }),
+      client.from("task_comments").select("id, task_id, user_id, content, created_at").eq("task_id", taskId).order("created_at", { ascending: true }),
       client.from("task_checklist_items").select("id, task_id, title, done, created_at").eq("task_id", taskId).order("created_at", { ascending: true }),
       client.from("task_labels").select("id, task_id, label").eq("task_id", taskId),
       client.from("task_activities").select("id, board_id, task_id, user_id, action, description, created_at").eq("task_id", taskId).order("created_at", { ascending: false }),
@@ -343,16 +359,23 @@
       client.from("definition_of_done").select("id, task_id, description, done, created_at").eq("task_id", taskId).order("created_at", { ascending: true })
     ]);
 
+    const profiles = await getProfilesByIds(client, [
+      taskRow.assignee_id,
+      ...(comments.data || []).map(item => item.user_id)
+    ]);
     const task = toTask(taskRow);
     return {
       task,
-      comments: (comments.data || []).map(item => ({
-        id: item.id,
-        userId: item.user_id,
-        content: item.content,
-        createdAt: item.created_at,
-        author: item.profiles ? `${item.profiles.name} (@${item.profiles.username})` : "Usuário"
-      })),
+      comments: (comments.data || []).map(item => {
+        const profile = profiles.get(item.user_id);
+        return {
+          id: item.id,
+          userId: item.user_id,
+          content: item.content,
+          createdAt: item.created_at,
+          author: profile ? `${profile.name} (@${profile.username})` : "Usuário"
+        };
+      }),
       checklist: (checklist.data || []).map(item => ({
         id: item.id,
         taskId: item.task_id,
@@ -379,7 +402,7 @@
         done: Boolean(item.done),
         createdAt: item.created_at
       })),
-      assignee: taskRow.profiles || null,
+      assignee: profiles.get(taskRow.assignee_id) || null,
       labelsList: (labels.data || []).map(item => item.label)
     };
   }
