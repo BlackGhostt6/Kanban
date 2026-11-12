@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalhe da tarefa | Dayboard</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand" aria-label="Dayboard, espaço de trabalho">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M5 6.5h5.5v11H5zM13.5 6.5H19v6h-5.5zM13.5 15h5.5v2.5h-5.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="brand-name">dayboard</span>
+        <span class="workspace-label">Tarefa</span>
+      </div>
+      <div class="topbar-right">
+        <button class="logout-button" id="logout-button" type="button">Sair</button>
+      </div>
+    </header>
+
+    <main class="task-page-shell">
+      <div class="task-header">
+        <a class="task-page-back" href="index.html">← Voltar ao quadro</a>
+        <button class="primary-button" id="open-in-board" type="button">Abrir no quadro</button>
+      </div>
+
+      <div class="task-grid">
+        <section class="panel">
+          <h1 id="task-title" class="task-title-large">Carregando...</h1>
+          <p id="task-description" class="task-description-full">Carregando detalhes da tarefa...</p>
+
+          <section class="detail-section">
+            <h2 class="section-label">Checklist</h2>
+            <div id="checklist-list" class="list-stack"></div>
+            <form id="checklist-form" class="field-row" style="margin-top: 12px;">
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <input id="checklist-input" type="text" maxlength="200" placeholder="Adicionar subtarefa" aria-label="Adicionar subtarefa">
+                <button class="small-button" type="submit">Adicionar</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="detail-section">
+            <h2 class="section-label">Comentários</h2>
+            <div id="comments-list" class="list-stack"></div>
+            <form id="comment-form" class="field-row" style="margin-top: 12px;">
+              <textarea id="comment-input" placeholder="Escreva um comentário..." maxlength="5000" required></textarea>
+              <button class="primary-button" type="submit">Adicionar comentário</button>
+            </form>
+          </section>
+
+          <section class="detail-section">
+            <h2 class="section-label">Critérios de aceite</h2>
+            <div id="acceptance-list" class="list-stack"></div>
+            <form id="acceptance-form" class="field-row" style="margin-top: 12px;">
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <input id="acceptance-input" type="text" maxlength="500" placeholder="Adicionar critério de aceite" aria-label="Critério de aceitação">
+                <button class="small-button" type="submit">Adicionar</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="detail-section">
+            <h2 class="section-label">Definition of Done</h2>
+            <div id="dod-list" class="list-stack"></div>
+            <form id="dod-form" class="field-row" style="margin-top: 12px;">
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <input id="dod-input" type="text" maxlength="500" placeholder="Adicionar critério da entrega" aria-label="Definition of Done">
+                <button class="small-button" type="submit">Adicionar</button>
+              </div>
+            </form>
+          </section>
+        </section>
+
+        <aside class="panel">
+          <h2 class="section-label">Detalhes</h2>
+          <div class="meta-list">
+            <div class="meta-row">
+              <span class="meta-key">Status</span>
+              <span class="meta-value"><select id="task-status"><option value="todo">A Fazer</option><option value="progress">Em Andamento</option><option value="done">Concluído</option></select></span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-key">Prioridade</span>
+              <span class="meta-value"><select id="task-priority"><option value="baixa">Baixa</option><option value="media">Média</option><option value="alta">Alta</option></select></span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-key">Prazo</span>
+              <span class="meta-value"><input id="task-due-date" type="date"></span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-key">Responsável</span>
+              <span class="meta-value"><select id="task-assignee"></select></span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-key">Story points</span>
+              <span class="meta-value"><input id="task-story-points" type="number" min="0" max="100" /></span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-key">Labels</span>
+              <span class="meta-value"><div id="task-labels" class="tag-list"></div></span>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h2 class="section-label">Atividades</h2>
+            <div id="activity-list" class="list-stack"></div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="js/supabase-config.js" defer></script>
+  <script src="js/storage.js" defer></script>
+  <script src="js/auth.js" defer></script>
+  <script src="js/task-page.js" defer></script>
+</body>
+</html>

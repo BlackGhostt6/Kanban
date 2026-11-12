@@ -40,6 +40,17 @@
         </button>
       </section>
 
+      <div class="board-toolbar">
+        <div class="board-selector-wrap">
+          <label for="board-selector">Quadro</label>
+          <select id="board-selector" aria-label="Selecionar quadro"></select>
+        </div>
+        <div class="toolbar-actions">
+          <button class="secondary-button" id="new-board-button" type="button">Novo quadro</button>
+          <button class="secondary-button" id="invite-member-button" type="button">Convidar membro</button>
+        </div>
+      </div>
+
       <div class="board-summary" aria-live="polite">
         <span id="task-summary">0 tarefas no quadro</span><span class="summary-rule" aria-hidden="true"></span><span>Arraste para organizar</span>
       </div>
@@ -111,6 +122,35 @@
       </form>
     </section>
   </div>
+  <div class="modal-backdrop" id="share-modal" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="share-title">
+      <div class="modal-heading">
+        <div><h2 id="share-title">Compartilhar quadro</h2><p class="modal-intro">Convide pessoas por e-mail e defina a permissão.</p></div>
+        <button class="icon-button" id="close-share-modal-button" type="button" aria-label="Fechar compartilhamento">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <form id="share-form">
+        <div class="form-field">
+          <label for="share-email">E-mail</label>
+          <input id="share-email" name="email" type="email" placeholder="nome@empresa.com" required autocomplete="off">
+        </div>
+        <div class="form-field">
+          <label for="share-role">Permissão</label>
+          <select id="share-role" name="role">
+            <option value="OWNER">Dono</option>
+            <option value="EDITOR" selected>Editor</option>
+            <option value="VIEWER">Leitor</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button class="secondary-button" id="cancel-share-button" type="button">Cancelar</button>
+          <button class="primary-button" type="submit">Salvar convite</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
