@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#f5f7f9">
   <meta name="description" content="Entre no Dayboard e organize suas tarefas.">
   <title>Entrar | Dayboard</title>
+  <script src="js/theme.js"></script>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/login.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
@@ -20,10 +21,13 @@
       </span>
       <span class="brand-name">dayboard</span>
     </a>
-    <a class="back-link" href="index.html">
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m14.5 5-7 7 7 7M8 12h11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Voltar ao início
-    </a>
+    <div class="login-topbar-actions">
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="Ativar tema escuro" title="Ativar tema escuro" aria-pressed="false"></button>
+      <a class="back-link" href="index.html">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m14.5 5-7 7 7 7M8 12h11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Voltar ao início
+      </a>
+    </div>
   </header>
 
   <main class="login-layout">
