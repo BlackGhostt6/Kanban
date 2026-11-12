@@ -23,6 +23,33 @@
     return "";
   }
 
+  function getRegistrationError(error) {
+    const details = [
+      error && error.code,
+      error && error.message,
+      error && error.details,
+      error && error.hint
+    ].filter(Boolean).join(" ").toLocaleLowerCase("pt-BR");
+
+    if (details.includes("username") || details.includes("profiles_username_lower_idx")) {
+      return "Este nome de usuário já está em uso. Escolha outro.";
+    }
+    if (
+      details.includes("email") ||
+      details.includes("e-mail") ||
+      details.includes("already registered") ||
+      details.includes("already exists") ||
+      details.includes("already_exists") ||
+      details.includes("email_exists")
+    ) {
+      return "Este e-mail já está cadastrado. Entre na sua conta ou use outro e-mail.";
+    }
+    if (error && error.code === "23505") {
+      return "Este e-mail ou nome de usuário já está cadastrado. Verifique os dados e tente novamente.";
+    }
+    return error && error.message ? error.message : "Não foi possível criar a conta.";
+  }
+
   async function registerUser(input) {
     const values = {
       name: input.name.trim(),
@@ -33,6 +60,13 @@
     const validationError = validateRegistration(values);
     if (validationError) throw new Error(validationError);
 
+    const { data: usernameAvailable, error: usernameError } = await getClient()
+      .rpc("is_username_available", { candidate: values.username });
+    if (usernameError) throw new Error(usernameError.message || "Não foi possível verificar o nome de usuário.");
+    if (usernameAvailable !== true) {
+      throw new Error("Este nome de usuário já está em uso. Escolha outro.");
+    }
+
     const { data, error } = await getClient().auth.signUp({
       email: values.email,
       password: values.password,
@@ -41,7 +75,10 @@
         emailRedirectTo: window.KanbanSupabase.emailRedirectUrl
       }
     });
-    if (error) throw new Error(error.message);
+    if (error) throw new Error(getRegistrationError(error));
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      throw new Error("Este e-mail já está cadastrado. Entre na sua conta ou use outro e-mail.");
+    }
     return { user: data.user, session: data.session };
   }
 

@@ -49,8 +49,11 @@
 
   async function ensureDefaultBoard() {
     const client = getClient();
-    const { data: userData } = await client.auth.getUser();
-    if (!userData.user) return null;
+    const { data: userData, error: userError } = await client.auth.getUser();
+    throwIfError(userError);
+    if (!userData || !userData.user || !userData.user.id) {
+      throw new Error("Sua sessão expirou. Entre novamente para carregar seus quadros.");
+    }
 
     const { data: existingBoard, error: existingError } = await client
       .from("boards")
@@ -268,6 +271,9 @@
 
   async function createTask(task) {
     const client = getClient();
+    if (!task || !task.boardId || !task.userId) {
+      throw new Error("Não foi possível criar a tarefa: o quadro ou o usuário não foi carregado.");
+    }
     const payload = {
       board_id: task.boardId,
       user_id: task.userId,

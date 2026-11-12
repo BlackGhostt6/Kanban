@@ -7,23 +7,45 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div class="app-shell">
-    <header class="topbar">
-      <div class="brand" aria-label="Dayboard, espaço de trabalho">
+  <div class="app-shell task-app-shell">
+    <aside class="app-sidebar" aria-label="Navegação do Dayboard">
+      <a class="brand" href="index.html" aria-label="Dayboard, espaço de trabalho">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none"><path d="M5 6.5h5.5v11H5zM13.5 6.5H19v6h-5.5zM13.5 15h5.5v2.5h-5.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
         </span>
         <span class="brand-name">dayboard</span>
-        <span class="workspace-label">Tarefa</span>
+      </a>
+      <div class="sidebar-section">
+        <p class="sidebar-section-label">Workspace</p>
+        <a class="sidebar-link" href="index.html">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="4" width="6" height="16" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="13" y="4" width="7" height="9" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M13 17h7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <span>Quadro Kanban</span>
+        </a>
+        <a class="sidebar-link is-active" href="#task-title" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4.5h8l4 4V19a1.5 1.5 0 0 1-1.5 1.5h-10A1.5 1.5 0 0 1 6 19V6a1.5 1.5 0 0 1 1-1.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M14.5 4.8V9h4.2M9 13h6m-6 3.5h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <span>Tarefa atual</span>
+        </a>
       </div>
-      <div class="topbar-right">
-        <button class="logout-button" id="logout-button" type="button">Sair</button>
+      <div class="sidebar-spacer"></div>
+      <div class="sidebar-profile sidebar-profile-task">
+        <span class="avatar" aria-hidden="true">DB</span>
+        <div class="sidebar-user-copy"><strong>Dayboard</strong><span>Área de trabalho</span></div>
+        <button class="logout-button" id="logout-button" type="button" aria-label="Sair da conta" title="Sair da conta">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 5H6.5A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19H10M14 8l4 4-4 4m4-4H9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
       </div>
-    </header>
+    </aside>
 
-    <main class="task-page-shell">
+    <div class="app-main-shell">
+      <header class="topbar">
+        <div class="topbar-context">
+          <a class="topbar-back" href="index.html">Quadro Kanban</a>
+          <span class="topbar-divider">/</span>
+          <span class="topbar-current">Detalhes da tarefa</span>
+        </div>
+      </header>
+      <main class="task-page-shell">
       <div class="task-header">
-        <a class="task-page-back" href="index.html">← Voltar ao quadro</a>
         <button class="primary-button" id="open-in-board" type="button">Abrir no quadro</button>
       </div>
 
@@ -110,7 +132,8 @@
           </div>
         </aside>
       </div>
-    </main>
+      </main>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>

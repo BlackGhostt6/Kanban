@@ -3,59 +3,89 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#f6f7f5">
+  <meta name="theme-color" content="#f5f7f9">
   <title>Dayboard | Seu espaço de trabalho</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <div class="app-shell">
-    <header class="topbar">
-      <div class="brand" aria-label="Dayboard, espaço de trabalho">
+    <aside class="app-sidebar" aria-label="Navegação do Dayboard">
+      <a class="brand" href="index.html" aria-label="Dayboard, espaço de trabalho">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none"><path d="M5 6.5h5.5v11H5zM13.5 6.5H19v6h-5.5zM13.5 15h5.5v2.5h-5.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
         </span>
         <span class="brand-name">dayboard</span>
-        <span class="workspace-label">Olá, <span id="welcome-name">Você</span>!</span>
-      </div>
-      <div class="topbar-right">
-        <span class="save-indicator"><span class="save-dot" aria-hidden="true"></span><span id="save-indicator-label">Aguardando conexão</span></span>
-        <span class="avatar" id="user-avatar" aria-label="Perfil do usuário">VC</span>
-        <button class="logout-button" id="logout-button" type="button" aria-label="Sair da conta">
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 5H6.5A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19H10M14 8l4 4-4 4m4-4H9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Sair
-        </button>
-      </div>
-    </header>
+      </a>
 
-    <main>
-      <section class="page-heading" aria-labelledby="page-title">
-        <div>
-          <p class="eyebrow" id="today-label">SEU ESPAÇO DE TRABALHO</p>
-          <h1 id="page-title">Quadro de tarefas</h1>
-          <p class="subtitle">Um passo de cada vez. Seu trabalho, sempre em movimento.</p>
+      <div class="sidebar-section">
+        <p class="sidebar-section-label">Workspace</p>
+        <a class="sidebar-link is-active" href="#kanban-board" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="4" width="6" height="16" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="13" y="4" width="7" height="9" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M13 17h7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <span>Quadro Kanban</span>
+        </a>
+      </div>
+
+      <div class="sidebar-section sidebar-boards">
+        <div class="sidebar-section-heading">
+          <label class="sidebar-section-label" for="board-selector">Seus espaços</label>
+          <button class="sidebar-icon-button" id="new-board-button" type="button" aria-label="Criar novo quadro" title="Criar novo quadro">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
         </div>
-        <button class="primary-button" id="add-task-button" type="button">
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-          Adicionar Nova Tarefa
-        </button>
-      </section>
-
-      <div class="board-toolbar">
         <div class="board-selector-wrap">
-          <label for="board-selector">Quadro</label>
-          <select id="board-selector" aria-label="Selecionar quadro"></select>
+          <select id="board-selector" aria-label="Meus quadros e compartilhados comigo"></select>
         </div>
-        <div class="toolbar-actions">
-          <button class="secondary-button" id="new-board-button" type="button">Novo quadro</button>
-          <button class="secondary-button" id="invite-member-button" type="button">Convidar membro</button>
-        </div>
+        <button class="sidebar-link sidebar-action" id="invite-member-button" type="button" aria-label="Compartilhar quadro" title="Compartilhar quadro">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20m6-9a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm8-3v6m-3-3h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Compartilhar quadro</span>
+        </button>
       </div>
 
-      <div class="board-summary" aria-live="polite">
-        <span id="task-summary">0 tarefas no quadro</span><span class="summary-rule" aria-hidden="true"></span><span>Arraste para organizar</span>
+      <div class="sidebar-spacer"></div>
+      <div class="sidebar-profile">
+        <span class="avatar" id="user-avatar" aria-label="Perfil do usuário">VC</span>
+        <div class="sidebar-user-copy">
+          <strong id="welcome-name">Você</strong>
+          <span>Conta pessoal</span>
+        </div>
+        <button class="logout-button" id="logout-button" type="button" aria-label="Sair da conta" title="Sair da conta">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 5H6.5A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19H10M14 8l4 4-4 4m4-4H9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
       </div>
+    </aside>
 
-      <section class="board" aria-label="Quadro Kanban">
+    <div class="app-main-shell">
+      <header class="topbar">
+        <div class="topbar-context">
+          <span class="topbar-kicker">WORKSPACE</span>
+          <span class="topbar-divider">/</span>
+          <span class="topbar-current">Quadro Kanban</span>
+        </div>
+        <div class="topbar-right">
+          <span class="save-indicator"><span class="save-dot" aria-hidden="true"></span><span id="save-indicator-label">Aguardando conexão</span></span>
+        </div>
+      </header>
+
+      <main>
+        <section class="page-heading" aria-labelledby="page-title">
+          <div>
+            <p class="eyebrow" id="today-label">VISÃO GERAL</p>
+            <h1 id="page-title">Quadro de tarefas</h1>
+            <p class="subtitle">Organize o trabalho e acompanhe cada etapa do projeto.</p>
+          </div>
+          <button class="primary-button" id="add-task-button" type="button">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            Nova tarefa
+          </button>
+        </section>
+
+        <div class="board-summary" aria-live="polite">
+          <span id="task-summary">0 tarefas no quadro</span>
+          <span class="summary-rule" aria-hidden="true"></span>
+          <span class="summary-hint">Arraste os cards para atualizar o andamento</span>
+        </div>
+
+      <section class="board" id="kanban-board" aria-label="Quadro Kanban">
         <section class="column" data-status="todo" aria-labelledby="title-todo">
           <header class="column-header">
             <div class="column-title-wrap"><span class="column-indicator" aria-hidden="true"></span><h2 id="title-todo">A Fazer</h2></div>
@@ -92,7 +122,8 @@
           </button>
         </section>
       </section>
-    </main>
+      </main>
+    </div>
   </div>
 
   <div class="modal-backdrop" id="task-modal" hidden>
@@ -112,6 +143,34 @@
           <label for="task-description">Descrição <span class="optional">(opcional)</span></label>
           <textarea id="task-description" name="description" maxlength="600" placeholder="Adicione detalhes para não perder o fio..."></textarea>
         </div>
+        <div class="task-form-grid">
+          <div class="form-field">
+            <label for="task-assignee">Responsável</label>
+            <select id="task-assignee" name="assignee">
+              <option value="">Sem responsável</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="task-priority">Prioridade</label>
+            <select id="task-priority" name="priority">
+              <option value="baixa">Baixa</option>
+              <option value="media" selected>Média</option>
+              <option value="alta">Alta</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="task-due-date">Data limite <span class="optional">(opcional)</span></label>
+            <input id="task-due-date" name="dueDate" type="date">
+          </div>
+          <div class="form-field">
+            <label for="task-status">Coluna</label>
+            <select id="task-status" name="status">
+              <option value="todo">A Fazer</option>
+              <option value="progress">Em Andamento</option>
+              <option value="done">Concluído</option>
+            </select>
+          </div>
+        </div>
         <div class="modal-actions">
           <button class="secondary-button" id="cancel-modal-button" type="button">Cancelar</button>
           <button class="primary-button" type="submit">
@@ -120,6 +179,44 @@
           </button>
         </div>
       </form>
+    </section>
+  </div>
+  <div class="modal-backdrop" id="board-modal" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="board-modal-title">
+      <div class="modal-heading">
+        <div><h2 id="board-modal-title">Novo quadro</h2><p class="modal-intro">Dê um nome e uma descrição para este espaço.</p></div>
+        <button class="icon-button" id="close-board-modal-button" type="button" aria-label="Fechar">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <form id="board-form">
+        <div class="form-field">
+          <label for="board-name">Nome do quadro</label>
+          <input id="board-name" name="name" type="text" maxlength="80" required autocomplete="off" placeholder="Ex.: Projeto novo">
+        </div>
+        <div class="form-field">
+          <label for="board-description">Descrição <span class="optional">(opcional)</span></label>
+          <textarea id="board-description" name="description" maxlength="500" placeholder="Qual é o objetivo deste quadro?"></textarea>
+        </div>
+        <div class="modal-actions">
+          <button class="secondary-button" id="cancel-board-button" type="button">Cancelar</button>
+          <button class="primary-button" type="submit">Criar quadro</button>
+        </div>
+      </form>
+    </section>
+  </div>
+  <div class="modal-backdrop" id="confirm-modal" hidden>
+    <section class="modal confirm-modal-content" role="dialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+      <div class="modal-heading">
+        <div><h2 id="confirm-title">Confirmar ação</h2><p class="modal-intro" id="confirm-message"></p></div>
+        <button class="icon-button" id="close-confirm-button" type="button" aria-label="Fechar">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="modal-actions">
+        <button class="secondary-button" id="cancel-confirm-button" type="button">Cancelar</button>
+        <button class="primary-button danger-button" id="accept-confirm-button" type="button">Confirmar</button>
+      </div>
     </section>
   </div>
   <div class="modal-backdrop" id="share-modal" hidden>

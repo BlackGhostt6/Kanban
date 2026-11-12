@@ -18,8 +18,17 @@
     const taskForm = document.getElementById("task-form");
     const modal = document.getElementById("task-modal");
     const shareModal = document.getElementById("share-modal");
+    const boardModal = document.getElementById("board-modal");
+    const boardForm = document.getElementById("board-form");
+    const confirmModal = document.getElementById("confirm-modal");
     const titleInput = document.getElementById("task-title");
     const descriptionInput = document.getElementById("task-description");
+    const assigneeInput = document.getElementById("task-assignee");
+    const priorityInput = document.getElementById("task-priority");
+    const dueDateInput = document.getElementById("task-due-date");
+    const statusInput = document.getElementById("task-status");
+    const boardNameInput = document.getElementById("board-name");
+    const boardDescriptionInput = document.getElementById("board-description");
     const modalTitle = document.getElementById("modal-title");
     const modalDescription = document.getElementById("modal-description");
     const submitLabel = document.getElementById("task-submit-label");
@@ -41,6 +50,24 @@
     let draggedTaskId = null;
     let editingTaskId = null;
     let lastFocusedElement = null;
+    let boardReady = false;
+    let confirmResolver = null;
+
+    const boardActionButtons = [
+      document.getElementById("add-task-button"),
+      document.getElementById("new-board-button"),
+      document.getElementById("invite-member-button"),
+      ...document.querySelectorAll("[data-open-modal]")
+    ];
+
+    function setBoardReady(ready) {
+      boardReady = ready;
+      boardActionButtons.forEach(button => { button.disabled = !ready; });
+      boardSelector.disabled = !ready;
+      board.setAttribute("aria-busy", String(!ready));
+    }
+
+    setBoardReady(false);
 
     function setSyncStatus(status) {
       const indicator = document.getElementById("save-indicator-label");
@@ -54,7 +81,10 @@
     }
 
     function formatDate(value) {
-      const date = new Date(value);
+      const dateOnly = typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+      const date = dateOnly
+        ? new Date(Number(value.slice(0, 4)), Number(value.slice(5, 7)) - 1, Number(value.slice(8, 10)))
+        : new Date(value);
       if (Number.isNaN(date.getTime())) return "";
       return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" }).format(date).replace(" de ", " ");
     }
@@ -68,12 +98,28 @@
       if (!boardSelector) return;
       const activeId = activeBoard ? activeBoard.id : "";
       boardSelector.replaceChildren();
-      boards.forEach(boardItem => {
-        const option = document.createElement("option");
-        option.value = boardItem.id;
-        option.textContent = boardItem.name;
-        if (boardItem.id === activeId) option.selected = true;
-        boardSelector.append(option);
+      const ownedBoards = boards.filter(boardItem => boardItem.ownerId === currentUser.id);
+      const sharedBoards = boards.filter(boardItem => boardItem.ownerId !== currentUser.id);
+      [
+        { label: "Meus quadros", items: ownedBoards },
+        { label: "Compartilhados comigo", items: sharedBoards }
+      ].forEach(group => {
+        const optgroup = document.createElement("optgroup");
+        optgroup.label = group.label;
+        if (!group.items.length) {
+          const emptyOption = document.createElement("option");
+          emptyOption.disabled = true;
+          emptyOption.textContent = group.label === "Meus quadros" ? "Nenhum quadro próprio" : "Nenhum quadro compartilhado";
+          optgroup.append(emptyOption);
+        }
+        group.items.forEach(boardItem => {
+          const option = document.createElement("option");
+          option.value = boardItem.id;
+          option.textContent = boardItem.name;
+          if (boardItem.id === activeId) option.selected = true;
+          optgroup.append(option);
+        });
+        boardSelector.append(optgroup);
       });
     }
 
@@ -159,9 +205,22 @@
       }
       if (task.dueDate) {
         const due = document.createElement("span");
-        due.className = "task-due";
+        const today = new Date();
+        const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+        due.className = `task-due${task.dueDate < todayKey && task.status !== "done" ? " is-overdue" : ""}`;
         due.textContent = `Prazo: ${formatDate(task.dueDate)}`;
         meta.append(due);
+      }
+      const assignee = boardMembers.find(member => member.userId && member.userId === task.assigneeId);
+      if (task.assigneeId) {
+        const assigneeLabel = document.createElement("span");
+        assigneeLabel.className = "task-assignee";
+        assigneeLabel.textContent = assignee && assignee.profile ? assignee.profile.name : (
+          task.assigneeId === activeBoard.ownerId
+            ? activeBoard.ownerId === currentUser.id ? currentUser.name : "Dono do quadro"
+            : "Responsável atribuído"
+        );
+        meta.append(assigneeLabel);
       }
 
       const description = document.createElement("p");
@@ -210,6 +269,10 @@
         titleInput.value = task.title;
         descriptionInput.value = task.description;
       }
+      populateAssignees(task ? task.assigneeId : "");
+      priorityInput.value = task ? task.priority : "media";
+      dueDateInput.value = task ? task.dueDate || "" : "";
+      statusInput.value = task ? task.status : "todo";
       modal.hidden = false;
       document.body.style.overflow = "hidden";
       requestAnimationFrame(() => titleInput.focus());
@@ -221,6 +284,68 @@
       taskForm.reset();
       editingTaskId = null;
       if (lastFocusedElement && typeof lastFocusedElement.focus === "function") lastFocusedElement.focus();
+    }
+
+    function populateAssignees(selectedId = "") {
+      assigneeInput.replaceChildren();
+      const unassigned = document.createElement("option");
+      unassigned.value = "";
+      unassigned.textContent = "Sem responsável";
+      assigneeInput.append(unassigned);
+
+      const options = [];
+      if (activeBoard && activeBoard.ownerId) {
+        options.push({
+          id: activeBoard.ownerId,
+          name: activeBoard.ownerId === currentUser.id ? currentUser.name : "Dono do quadro"
+        });
+      }
+      boardMembers.forEach(member => {
+        if (!member.userId || options.some(option => option.id === member.userId)) return;
+        options.push({
+          id: member.userId,
+          name: member.profile ? member.profile.name : member.email
+        });
+      });
+
+      options.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item.id;
+        option.textContent = item.name;
+        assigneeInput.append(option);
+      });
+      assigneeInput.value = selectedId || "";
+    }
+
+    function openBoardModal() {
+      boardForm.reset();
+      boardModal.hidden = false;
+      document.body.style.overflow = "hidden";
+      requestAnimationFrame(() => boardNameInput.focus());
+    }
+
+    function closeBoardModal() {
+      boardModal.hidden = true;
+      document.body.style.overflow = "";
+      boardForm.reset();
+    }
+
+    function confirmAction(title, message, confirmLabel = "Confirmar") {
+      document.getElementById("confirm-title").textContent = title;
+      document.getElementById("confirm-message").textContent = message;
+      document.getElementById("accept-confirm-button").textContent = confirmLabel;
+      confirmModal.hidden = false;
+      document.body.style.overflow = "hidden";
+      return new Promise(resolve => { confirmResolver = resolve; });
+    }
+
+    function finishConfirm(confirmed) {
+      if (!confirmResolver) return;
+      const resolve = confirmResolver;
+      confirmResolver = null;
+      confirmModal.hidden = true;
+      document.body.style.overflow = "";
+      resolve(confirmed);
     }
 
     function showToast(message, isError = false) {
@@ -240,11 +365,15 @@
 
     async function loadBoardState() {
       const defaultBoard = await window.KanbanStorage.ensureDefaultBoard();
-      if (!defaultBoard) return;
+      if (!defaultBoard) {
+        throw new Error("Não foi possível recuperar o quadro da sua conta.");
+      }
       boards = await window.KanbanStorage.getBoards();
       const savedBoardId = window.localStorage.getItem("dayboard-active-board");
       activeBoard = boards.find(boardItem => boardItem.id === savedBoardId) || boards.find(boardItem => boardItem.id === defaultBoard.id) || boards[0] || defaultBoard;
-      if (!activeBoard) return;
+      if (!activeBoard || !activeBoard.id) {
+        throw new Error("Sua conta não possui um quadro disponível para criar tarefas.");
+      }
       window.localStorage.setItem("dayboard-active-board", activeBoard.id);
       boardMembers = await window.KanbanStorage.getBoardMembers(activeBoard.id);
       columns = await window.KanbanStorage.getBoardColumns(activeBoard.id);
@@ -253,22 +382,27 @@
       renderBoard();
     }
 
-    async function addTask(title, description) {
+    async function addTask(taskValues) {
       setSyncStatus("Salvando...");
       try {
+        if (!boardReady || !activeBoard || !activeBoard.id) {
+          throw new Error("O quadro ainda não foi carregado. Aguarde e tente novamente.");
+        }
         const task = await window.KanbanStorage.createTask({
           boardId: activeBoard.id,
           userId: currentUser.id,
-          title,
-          description,
-          status: "todo",
-          priority: "media"
+          title: taskValues.title,
+          description: taskValues.description,
+          status: taskValues.status,
+          priority: taskValues.priority,
+          dueDate: taskValues.dueDate,
+          assigneeId: taskValues.assigneeId
         });
         await window.KanbanStorage.logActivity(activeBoard.id, task.id, "task_created", `A tarefa “${task.title}” foi criada.`);
         tasks.unshift(task);
         renderBoard();
         setSyncStatus("Sincronizado na nuvem");
-        showToast("Tarefa adicionada em A Fazer.");
+        showToast(`Tarefa adicionada em ${STATUS_LABELS[task.status] || task.status}.`);
         return true;
       } catch (error) {
         setSyncStatus("Falha na sincronização");
@@ -277,12 +411,12 @@
       }
     }
 
-    async function updateTask(taskId, title, description) {
+    async function updateTask(taskId, changes) {
       const task = tasks.find(item => item.id === taskId);
       if (!task) return false;
       setSyncStatus("Salvando...");
       try {
-        const updatedTask = await window.KanbanStorage.updateTask(taskId, { title, description });
+        const updatedTask = await window.KanbanStorage.updateTask(taskId, changes);
         tasks = tasks.map(item => item.id === taskId ? updatedTask : item);
         renderBoard();
         setSyncStatus("Sincronizado na nuvem");
@@ -297,7 +431,7 @@
 
     async function deleteTask(taskId) {
       const task = tasks.find(item => item.id === taskId);
-      if (!task || !window.confirm(`Excluir a tarefa “${task.title}”?`)) return;
+      if (!task || !(await confirmAction("Excluir tarefa?", `Deseja excluir “${task.title}”?`, "Excluir"))) return;
       setSyncStatus("Salvando...");
       try {
         await window.KanbanStorage.deleteTask(taskId);
@@ -329,8 +463,8 @@
       }
     }
 
-    async function createBoard(name) {
-      const created = await window.KanbanStorage.createBoard(name || "Meu quadro");
+    async function createBoard(name, description) {
+      const created = await window.KanbanStorage.createBoard(name, description);
       boards = await window.KanbanStorage.getBoards();
       activeBoard = created;
       window.localStorage.setItem("dayboard-active-board", activeBoard.id);
@@ -369,12 +503,21 @@
     document.getElementById("close-modal-button").addEventListener("click", closeModal);
     document.getElementById("cancel-modal-button").addEventListener("click", closeModal);
     modal.addEventListener("click", event => { if (event.target === modal) closeModal(); });
+    document.getElementById("close-board-modal-button").addEventListener("click", closeBoardModal);
+    document.getElementById("cancel-board-button").addEventListener("click", closeBoardModal);
+    boardModal.addEventListener("click", event => { if (event.target === boardModal) closeBoardModal(); });
+    document.getElementById("close-confirm-button").addEventListener("click", () => finishConfirm(false));
+    document.getElementById("cancel-confirm-button").addEventListener("click", () => finishConfirm(false));
+    document.getElementById("accept-confirm-button").addEventListener("click", () => finishConfirm(true));
+    confirmModal.addEventListener("click", event => { if (event.target === confirmModal) finishConfirm(false); });
     document.getElementById("close-share-modal-button").addEventListener("click", closeShareModal);
     document.getElementById("cancel-share-button").addEventListener("click", closeShareModal);
     shareModal.addEventListener("click", event => { if (event.target === shareModal) closeShareModal(); });
     document.addEventListener("keydown", event => {
       if (event.key === "Escape" && !modal.hidden) closeModal();
       if (event.key === "Escape" && !shareModal.hidden) closeShareModal();
+      if (event.key === "Escape" && !boardModal.hidden) closeBoardModal();
+      if (event.key === "Escape" && !confirmModal.hidden) finishConfirm(false);
     });
 
     boardSelector.addEventListener("change", async event => {
@@ -389,13 +532,26 @@
       renderBoard();
     });
 
-    document.getElementById("new-board-button").addEventListener("click", async () => {
-      const name = window.prompt("Qual será o nome do novo quadro?");
-      if (!name || !name.trim()) return;
-      await createBoard(name.trim());
+    document.getElementById("new-board-button").addEventListener("click", () => {
+      openBoardModal();
     });
 
     document.getElementById("invite-member-button").addEventListener("click", openInviteModal);
+
+    boardForm.addEventListener("submit", async event => {
+      event.preventDefault();
+      if (!boardForm.reportValidity()) return;
+      const submitButton = boardForm.querySelector("button[type='submit']");
+      submitButton.disabled = true;
+      try {
+        await createBoard(boardNameInput.value.trim(), boardDescriptionInput.value.trim());
+        closeBoardModal();
+      } catch (error) {
+        showToast(`Não foi possível criar o quadro: ${error.message}`, true);
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
 
     shareForm.addEventListener("submit", async event => {
       event.preventDefault();
@@ -427,9 +583,24 @@
       const description = descriptionInput.value.trim();
       const submitButton = taskForm.querySelector("button[type='submit']");
       submitButton.disabled = true;
+      const taskValues = {
+        title,
+        description,
+        assigneeId: assigneeInput.value || null,
+        priority: priorityInput.value,
+        dueDate: dueDateInput.value || null,
+        status: statusInput.value
+      };
       const saved = editingTaskId
-        ? await updateTask(editingTaskId, title, description)
-        : await addTask(title, description);
+        ? await updateTask(editingTaskId, {
+            title: taskValues.title,
+            description: taskValues.description,
+            assignee_id: taskValues.assigneeId,
+            priority: taskValues.priority,
+            due_date: taskValues.dueDate,
+            status: taskValues.status
+          })
+        : await addTask(taskValues);
       submitButton.disabled = false;
       if (saved) closeModal();
     });
@@ -457,13 +628,16 @@
 
     taskSummary.textContent = "Carregando suas tarefas...";
     await loadBoardState();
+    setBoardReady(true);
     setSyncStatus("Sincronizado na nuvem");
   }
 
   main().catch(error => {
     console.error("Não foi possível carregar o quadro.", error);
+    document.querySelectorAll("#add-task-button, #new-board-button, #invite-member-button, [data-open-modal], #board-selector")
+      .forEach(button => { button.disabled = true; });
     const summary = document.getElementById("task-summary");
-    if (summary) summary.textContent = "Não foi possível carregar as tarefas. Verifique a conexão e atualize a página.";
+    if (summary) summary.textContent = `Não foi possível carregar o quadro: ${error.message}`;
     const syncStatus = document.getElementById("save-indicator-label");
     if (syncStatus) syncStatus.textContent = "Falha na sincronização";
   });

@@ -1,6 +1,6 @@
 create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
-  email text not null unique check (email ~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$'),
+  email text not null,
   name text not null check (char_length(name) between 2 and 80),
   username text not null check (username ~ '^[a-z0-9._-]{3,30}$'),
   created_at timestamptz not null default now()
@@ -20,7 +20,13 @@ create table if not exists public.boards (
 create index if not exists boards_owner_id_idx
   on public.boards (owner_id, created_at desc);
 
-create type public.board_role as enum ('OWNER', 'EDITOR', 'VIEWER');
+do $$
+begin
+  create type public.board_role as enum ('OWNER', 'EDITOR', 'VIEWER');
+exception
+  when duplicate_object then null;
+end;
+$$;
 
 create table if not exists public.board_members (
   id uuid primary key default gen_random_uuid(),
@@ -65,9 +71,6 @@ create table if not exists public.tasks (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-
-create index if not exists tasks_board_status_idx
-  on public.tasks (board_id, status, created_at desc);
 
 create table if not exists public.task_comments (
   id uuid primary key default gen_random_uuid(),
@@ -139,6 +142,89 @@ create table if not exists public.definition_of_done (
   created_at timestamptz not null default now()
 );
 
+alter table public.profiles add column if not exists email text;
+
+update public.profiles p
+set email = lower(btrim(u.email))
+from auth.users u
+where u.id = p.id and p.email is null and u.email is not null;
+
+do $$
+begin
+  if exists (select 1 from public.profiles where email is null) then
+    raise exception 'Não foi possível migrar perfis sem e-mail em auth.users.';
+  end if;
+end;
+$$;
+
+alter table public.profiles alter column email set not null;
+create unique index if not exists profiles_email_lower_idx
+  on public.profiles (lower(email));
+
+alter table public.tasks add column if not exists board_id uuid references public.boards (id) on delete cascade;
+alter table public.tasks add column if not exists due_date date;
+alter table public.tasks add column if not exists priority text not null default 'media';
+alter table public.tasks add column if not exists assignee_id uuid references auth.users (id) on delete set null;
+alter table public.tasks add column if not exists story_points integer;
+alter table public.tasks add column if not exists sprint_id uuid;
+alter table public.tasks add column if not exists backlog boolean not null default false;
+alter table public.tasks add column if not exists updated_at timestamptz not null default now();
+
+insert into public.boards (owner_id, name, description)
+select distinct t.user_id, 'Meu quadro', 'Quadro principal'
+from public.tasks t
+where t.board_id is null
+  and t.user_id is not null
+  and not exists (
+    select 1 from public.boards b where b.owner_id = t.user_id
+  );
+
+insert into public.board_columns (board_id, key, name, sort_order)
+select b.id, c.key, c.name, c.sort_order
+from public.boards b
+cross join (values
+  ('todo', 'A Fazer', 1),
+  ('progress', 'Em Andamento', 2),
+  ('done', 'Concluído', 3)
+) as c(key, name, sort_order)
+on conflict (board_id, key) do nothing;
+
+update public.tasks t
+set board_id = (
+  select b.id
+  from public.boards b
+  where b.owner_id = t.user_id
+  order by b.created_at asc, b.id asc
+  limit 1
+)
+where t.board_id is null;
+
+do $$
+begin
+  if exists (select 1 from public.tasks where board_id is null) then
+    raise exception 'Não foi possível associar algumas tarefas antigas a um quadro.';
+  end if;
+end;
+$$;
+
+alter table public.tasks alter column board_id set not null;
+create index if not exists tasks_board_status_idx
+  on public.tasks (board_id, status, created_at desc);
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'tasks_sprint_id_fkey'
+      and conrelid = 'public.tasks'::regclass
+  ) then
+    alter table public.tasks
+      add constraint tasks_sprint_id_fkey
+      foreign key (sprint_id) references public.sprints (id) on delete set null;
+  end if;
+end;
+$$;
+
 create or replace function public.create_profile_for_new_user()
 returns trigger
 language plpgsql
@@ -161,6 +247,23 @@ drop trigger if exists create_profile_after_signup on auth.users;
 create trigger create_profile_after_signup
   after insert on auth.users
   for each row execute function public.create_profile_for_new_user();
+
+create or replace function public.is_username_available(candidate text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select not exists (
+    select 1
+    from public.profiles
+    where lower(username) = lower(btrim(candidate))
+  );
+$$;
+
+revoke all on function public.is_username_available(text) from public;
+grant execute on function public.is_username_available(text) to anon, authenticated;
 
 alter table public.profiles enable row level security;
 alter table public.boards enable row level security;
