@@ -24,23 +24,23 @@
   }
 
   function getRegistrationError(error) {
+    const code = String(error && error.code || "").toLocaleLowerCase("pt-BR");
+    const message = String(error && error.message || "").toLocaleLowerCase("pt-BR");
     const details = [
-      error && error.code,
-      error && error.message,
       error && error.details,
       error && error.hint
     ].filter(Boolean).join(" ").toLocaleLowerCase("pt-BR");
+    const searchableDetails = `${code} ${message} ${details}`;
 
-    if (details.includes("username") || details.includes("profiles_username_lower_idx")) {
+    if (searchableDetails.includes("username") || searchableDetails.includes("profiles_username_lower_idx")) {
       return "Este nome de usuário já está em uso. Escolha outro.";
     }
     if (
-      details.includes("email") ||
-      details.includes("e-mail") ||
-      details.includes("already registered") ||
-      details.includes("already exists") ||
-      details.includes("already_exists") ||
-      details.includes("email_exists")
+      code === "email_exists" ||
+      code === "user_already_exists" ||
+      searchableDetails.includes("profiles_email_lower_idx") ||
+      /(?:user|email(?: address)?) already (?:registered|exists)/i.test(searchableDetails) ||
+      /email.*(?:duplicate|already exists)/i.test(searchableDetails)
     ) {
       return "Este e-mail já está cadastrado. Entre na sua conta ou use outro e-mail.";
     }
