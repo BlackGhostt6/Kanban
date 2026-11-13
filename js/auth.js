@@ -108,14 +108,23 @@
       .from("profiles")
       .select("name, username")
       .eq("id", userData.user.id)
-      .single();
+      .maybeSingle();
     if (profileError) throw new Error(profileError.message);
+
+    const metadata = userData.user.user_metadata || {};
+    const email = userData.user.email || "";
+    const profileName = profile && typeof profile.name === "string" ? profile.name.trim() : "";
+    const metadataName = typeof metadata.name === "string" ? metadata.name.trim() : "";
+    const displayName = profileName || metadataName || email.split("@")[0] || "Usuário";
+    if (!profile) {
+      console.warn("Perfil público ausente; usando os dados da sessão para carregar a conta.");
+    }
 
     return {
       id: userData.user.id,
-      email: userData.user.email,
-      name: profile.name,
-      username: profile.username
+      email,
+      name: displayName,
+      username: profile && profile.username || metadata.username || ""
     };
   }
 
