@@ -46,6 +46,29 @@
           <span class="topbar-current">Detalhes da tarefa</span>
         </div>
         <div class="topbar-right">
+          <div class="notification-center">
+            <button class="notifications-toggle" id="notifications-toggle" type="button" aria-label="Notificações" aria-controls="notifications-panel" aria-expanded="false">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span class="notification-count" id="notifications-count" hidden></span>
+            </button>
+            <section class="notifications-panel" id="notifications-panel" aria-label="Central de notificações" hidden>
+              <div class="notifications-header">
+                <div><h2>Notificações</h2><p>Convites e atualizações dos seus quadros.</p></div>
+                <button class="icon-button" id="notifications-close" type="button" aria-label="Fechar notificações">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+              <p class="notifications-status" id="notifications-status" role="status" aria-live="polite"></p>
+              <section class="notifications-section" aria-labelledby="notifications-invitations-title">
+                <h3 id="notifications-invitations-title">Convites</h3>
+                <div id="notifications-invitations"></div>
+              </section>
+              <section class="notifications-section" aria-labelledby="notifications-activity-title">
+                <h3 id="notifications-activity-title">Atividade recente</h3>
+                <div id="notifications-activity"></div>
+              </section>
+            </section>
+          </div>
           <button class="theme-toggle" type="button" data-theme-toggle aria-label="Ativar tema escuro" title="Ativar tema escuro" aria-pressed="false"></button>
         </div>
       </header>
@@ -145,6 +168,7 @@
   <script src="js/supabase-config.js" defer></script>
   <script src="js/storage.js" defer></script>
   <script src="js/auth.js" defer></script>
+  <script src="js/notifications.js" defer></script>
   <script src="js/task-page.js" defer></script>
 </body>
 </html>

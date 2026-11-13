@@ -36,6 +36,17 @@
       return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short", year: "numeric" }).format(date);
     }
 
+    async function recordTaskActivity(action, description) {
+      if (!taskInfo || !taskInfo.task) return;
+      await window.KanbanStorage.logActivity(taskInfo.task.boardId, taskId, action, description);
+    }
+
+    async function updateTaskField(changes, description) {
+      await window.KanbanStorage.updateTask(taskId, changes);
+      await recordTaskActivity("task_updated", description);
+      await loadTask();
+    }
+
     function renderChecklist(items) {
       checklistListEl.replaceChildren();
       if (!items.length) {
@@ -51,6 +62,7 @@
         checkbox.checked = Boolean(item.done);
         checkbox.addEventListener("change", async () => {
           await window.KanbanStorage.toggleChecklistItem(item.id, checkbox.checked);
+          await recordTaskActivity("task_updated", `Checklist da tarefa “${taskInfo.task.title}” atualizado.`);
           await loadTask();
         });
         const text = document.createElement("span");
@@ -95,6 +107,7 @@
         checkbox.checked = Boolean(item.done);
         checkbox.addEventListener("change", async () => {
           await window.KanbanStorage.updateAcceptanceCriterion(item.id, checkbox.checked);
+          await recordTaskActivity("task_updated", `Critérios de aceite da tarefa “${taskInfo.task.title}” atualizados.`);
           await loadTask();
         });
         label.append(checkbox, document.createTextNode(" " + item.description));
@@ -118,6 +131,7 @@
         checkbox.checked = Boolean(item.done);
         checkbox.addEventListener("change", async () => {
           await window.KanbanStorage.updateDefinitionOfDone(item.id, checkbox.checked);
+          await recordTaskActivity("task_updated", `Definition of Done da tarefa “${taskInfo.task.title}” atualizado.`);
           await loadTask();
         });
         label.append(checkbox, document.createTextNode(" " + item.description));
@@ -161,6 +175,7 @@
           } else {
             await window.KanbanStorage.addTaskLabel(taskInfo.task.id, label);
           }
+          await recordTaskActivity("task_updated", `Labels da tarefa “${taskInfo.task.title}” atualizadas.`);
           await loadTask();
         });
         taskLabelsEl.appendChild(button);
@@ -205,36 +220,39 @@
     }
 
     taskStatusEl.addEventListener("change", async () => {
+      const previousStatus = taskInfo.task.status;
+      const nextStatus = taskStatusEl.value;
       await window.KanbanStorage.updateTask(taskId, { status: taskStatusEl.value });
+      if (previousStatus !== nextStatus) {
+        const statusNames = { todo: "A Fazer", progress: "Em Andamento", done: "Concluído" };
+        await recordTaskActivity("task_moved", `A tarefa “${taskInfo.task.title}” foi movida para ${statusNames[nextStatus] || nextStatus}.`);
+      }
       await loadTask();
     });
 
     taskPriorityEl.addEventListener("change", async () => {
-      await window.KanbanStorage.updateTask(taskId, { priority: taskPriorityEl.value });
-      await loadTask();
+      await updateTaskField({ priority: taskPriorityEl.value }, `Prioridade da tarefa “${taskInfo.task.title}” atualizada.`);
     });
 
     taskDueDateEl.addEventListener("change", async () => {
-      await window.KanbanStorage.updateTask(taskId, { due_date: taskDueDateEl.value || null });
-      await loadTask();
+      await updateTaskField({ due_date: taskDueDateEl.value || null }, `Prazo da tarefa “${taskInfo.task.title}” atualizado.`);
     });
 
     taskAssigneeEl.addEventListener("change", async () => {
       const selected = taskAssigneeEl.value || null;
-      await window.KanbanStorage.updateTask(taskId, { assignee_id: selected });
-      await loadTask();
+      await updateTaskField({ assignee_id: selected }, `Responsável da tarefa “${taskInfo.task.title}” atualizado.`);
     });
 
     taskStoryPointsEl.addEventListener("change", async () => {
       const value = taskStoryPointsEl.value === "" ? null : Number(taskStoryPointsEl.value);
-      await window.KanbanStorage.updateTask(taskId, { story_points: value });
-      await loadTask();
+      await updateTaskField({ story_points: value }, `Story points da tarefa “${taskInfo.task.title}” atualizados.`);
     });
 
     document.getElementById("checklist-form").addEventListener("submit", async event => {
       event.preventDefault();
       const input = document.getElementById("checklist-input");
       await window.KanbanStorage.addChecklistItem(taskId, input.value);
+      await recordTaskActivity("task_updated", `Uma subtarefa foi adicionada à tarefa “${taskInfo.task.title}”.`);
       input.value = "";
       await loadTask();
     });
@@ -243,6 +261,7 @@
       event.preventDefault();
       const input = document.getElementById("comment-input");
       await window.KanbanStorage.addTaskComment(taskId, input.value);
+      await recordTaskActivity("comment_added", `Novo comentário na tarefa “${taskInfo.task.title}”.`);
       input.value = "";
       await loadTask();
     });
@@ -251,6 +270,7 @@
       event.preventDefault();
       const input = document.getElementById("acceptance-input");
       await window.KanbanStorage.addAcceptanceCriterion(taskId, input.value);
+      await recordTaskActivity("task_updated", `Um critério de aceite foi adicionado à tarefa “${taskInfo.task.title}”.`);
       input.value = "";
       await loadTask();
     });
@@ -259,6 +279,7 @@
       event.preventDefault();
       const input = document.getElementById("dod-input");
       await window.KanbanStorage.addDefinitionOfDone(taskId, input.value);
+      await recordTaskActivity("task_updated", `Um item de Definition of Done foi adicionado à tarefa “${taskInfo.task.title}”.`);
       input.value = "";
       await loadTask();
     });

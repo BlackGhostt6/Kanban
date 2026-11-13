@@ -382,6 +382,35 @@
       renderBoard();
     }
 
+    window.addEventListener("dayboard:invitation-accepted", async event => {
+      const boardId = event.detail && event.detail.boardId;
+      if (!boardId) return;
+      setBoardReady(false);
+      try {
+        const availableBoards = await window.KanbanStorage.getBoards();
+        const acceptedBoard = availableBoards.find(boardItem => boardItem.id === boardId);
+        if (!acceptedBoard) throw new Error("O quadro aceito não está disponível na sua conta.");
+        const [acceptedMembers, acceptedColumns, acceptedTasks] = await Promise.all([
+          window.KanbanStorage.getBoardMembers(acceptedBoard.id),
+          window.KanbanStorage.getBoardColumns(acceptedBoard.id),
+          window.KanbanStorage.getTasks(acceptedBoard.id)
+        ]);
+        window.localStorage.setItem("dayboard-active-board", acceptedBoard.id);
+        boards = availableBoards;
+        activeBoard = acceptedBoard;
+        boardMembers = acceptedMembers;
+        columns = acceptedColumns;
+        tasks = acceptedTasks;
+        renderBoardList();
+        renderBoard();
+        showToast(`Quadro “${activeBoard.name}” adicionado aos seus espaços.`);
+      } catch (error) {
+        showToast(`Não foi possível carregar o quadro aceito: ${error.message}`, true);
+      } finally {
+        setBoardReady(true);
+      }
+    });
+
     async function addTask(taskValues) {
       setSyncStatus("Salvando...");
       try {
@@ -417,6 +446,16 @@
       setSyncStatus("Salvando...");
       try {
         const updatedTask = await window.KanbanStorage.updateTask(taskId, changes);
+        const statusChanged = changes.status && changes.status !== task.status;
+        const activityDescription = statusChanged
+          ? `A tarefa “${task.title}” foi movida para ${STATUS_LABELS[changes.status] || changes.status}.`
+          : `A tarefa “${task.title}” foi atualizada.`;
+        await window.KanbanStorage.logActivity(
+          task.boardId,
+          task.id,
+          statusChanged ? "task_moved" : "task_updated",
+          activityDescription
+        );
         tasks = tasks.map(item => item.id === taskId ? updatedTask : item);
         renderBoard();
         setSyncStatus("Sincronizado na nuvem");
@@ -435,6 +474,12 @@
       setSyncStatus("Salvando...");
       try {
         await window.KanbanStorage.deleteTask(taskId);
+        await window.KanbanStorage.logActivity(
+          task.boardId,
+          null,
+          "task_deleted",
+          `A tarefa “${task.title}” foi excluída.`
+        );
         tasks = tasks.filter(item => item.id !== taskId);
         renderBoard();
         setSyncStatus("Sincronizado na nuvem");
@@ -562,9 +607,11 @@
         return;
       }
       try {
-        await window.KanbanStorage.inviteMember(activeBoard.id, shareEmailInput.value, shareRoleInput.value);
+        const invitation = await window.KanbanStorage.inviteMember(activeBoard.id, shareEmailInput.value, shareRoleInput.value);
         closeShareModal();
-        showToast("Convite salvo para o quadro.");
+        showToast(invitation.user_id
+          ? "Essa pessoa já tem acesso ao quadro; a permissão foi atualizada."
+          : "Convite enviado. O acesso será liberado quando a pessoa aceitar.");
       } catch (error) {
         showToast(error.message || "Não foi possível compartilhar o quadro.", true);
       }

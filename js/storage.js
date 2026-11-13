@@ -202,17 +202,19 @@
     const { data: userData } = await client.auth.getUser();
     if (!userData.user) throw new Error("Você precisa estar autenticado para convidar membros.");
 
-    const { data: memberProfile } = await client
-      .from("profiles")
-      .select("id, email")
+    const { data: existingMember, error: existingMemberError } = await client
+      .from("board_members")
+      .select("user_id")
+      .eq("board_id", boardId)
       .eq("email", normalizedEmail)
       .maybeSingle();
+    throwIfError(existingMemberError);
 
     const { data, error } = await client
       .from("board_members")
       .upsert({
         board_id: boardId,
-        user_id: memberProfile ? memberProfile.id : null,
+        user_id: existingMember ? existingMember.user_id : null,
         email: normalizedEmail,
         role,
         invited_by: userData.user.id
@@ -221,6 +223,40 @@
       .single();
     throwIfError(error);
     return data;
+  }
+
+  async function getPendingBoardInvitations() {
+    const client = getClient();
+    const { data, error } = await client.rpc("get_pending_board_invitations");
+    throwIfError(error);
+    return (data || []).map(invitation => ({
+      id: invitation.membership_id,
+      boardId: invitation.board_id,
+      boardName: invitation.board_name,
+      inviterName: invitation.inviter_name,
+      role: invitation.role,
+      invitedAt: invitation.invited_at
+    }));
+  }
+
+  async function acceptBoardInvitation(membershipId) {
+    if (!membershipId) throw new Error("Convite inválido.");
+    const client = getClient();
+    const { data, error } = await client.rpc("accept_board_invitation", {
+      target_membership_id: membershipId
+    });
+    throwIfError(error);
+    if (!data) throw new Error("O serviço não confirmou o aceite do convite.");
+    return data;
+  }
+
+  async function declineBoardInvitation(membershipId) {
+    if (!membershipId) throw new Error("Convite inválido.");
+    const client = getClient();
+    const { error } = await client.rpc("decline_board_invitation", {
+      target_membership_id: membershipId
+    });
+    throwIfError(error);
   }
 
   async function removeMember(boardId, memberId) {
@@ -520,6 +556,9 @@
     throwIfError(error);
     return (data || []).map(item => ({
       id: item.id,
+      boardId: item.board_id,
+      taskId: item.task_id,
+      userId: item.user_id,
       action: item.action,
       description: item.description,
       createdAt: item.created_at
@@ -548,6 +587,9 @@
     createBoard,
     getBoardMembers,
     inviteMember,
+    getPendingBoardInvitations,
+    acceptBoardInvitation,
+    declineBoardInvitation,
     removeMember,
     updateMemberRole,
     getBoardColumns,
