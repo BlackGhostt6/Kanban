@@ -74,6 +74,9 @@
       </header>
       <main class="task-page-shell">
       <div class="task-header">
+        <div class="task-header-actions">
+          <button class="secondary-button" id="break-subtasks-button" type="button" disabled>Quebrar em subtasks</button>
+        </div>
         <button class="primary-button" id="open-in-board" type="button">Abrir no quadro</button>
       </div>
 
@@ -91,6 +94,7 @@
                 <button class="small-button" type="submit">Adicionar</button>
               </div>
             </form>
+            <p class="checklist-permission-note" id="checklist-permission-note" hidden>Somente proprietários e editores podem alterar o checklist deste quadro.</p>
           </section>
 
           <section class="detail-section">
@@ -164,10 +168,28 @@
     </div>
   </div>
 
+  <div class="ai-subtasks-backdrop" id="ai-subtasks-modal" hidden>
+    <section class="ai-subtasks-dialog" role="dialog" aria-modal="true" aria-labelledby="ai-subtasks-title">
+      <div class="ai-subtasks-heading">
+        <div><h2 id="ai-subtasks-title">Sugestões de subtasks</h2><p>Revise e escolha o que deseja adicionar ao checklist.</p></div>
+        <button class="icon-button" id="ai-subtasks-close" type="button" aria-label="Fechar sugestões">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <p class="ai-subtasks-status" id="ai-subtasks-status" role="status" aria-live="polite"></p>
+      <div class="ai-subtasks-list list-stack" id="ai-subtasks-list"></div>
+      <div class="ai-subtasks-actions">
+        <button class="secondary-button" id="ai-subtasks-cancel" type="button">Cancelar</button>
+        <button class="primary-button" id="ai-subtasks-save" type="button" disabled>Adicionar selecionadas</button>
+      </div>
+    </section>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="js/supabase-config.js" defer></script>
   <script src="js/storage.js" defer></script>
   <script src="js/auth.js" defer></script>
+  <script src="js/ai-client.js" defer></script>
   <script src="js/notifications.js" defer></script>
   <script src="js/task-page.js" defer></script>
 </body>

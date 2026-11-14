@@ -24,10 +24,18 @@
     const taskAssigneeEl = document.getElementById("task-assignee");
     const taskStoryPointsEl = document.getElementById("task-story-points");
     const taskLabelsEl = document.getElementById("task-labels");
+    const checklistFormEl = document.getElementById("checklist-form");
+    const checklistPermissionNote = document.getElementById("checklist-permission-note");
     const openInBoardButton = document.getElementById("open-in-board");
+    const breakSubtasksButton = document.getElementById("break-subtasks-button");
+    const aiSubtasksModal = document.getElementById("ai-subtasks-modal");
+    const aiSubtasksList = document.getElementById("ai-subtasks-list");
+    const aiSubtasksStatus = document.getElementById("ai-subtasks-status");
+    const aiSubtasksSave = document.getElementById("ai-subtasks-save");
     const logoutButton = document.getElementById("logout-button");
     let taskInfo = null;
     let boardMembers = [];
+    let canEditChecklist = false;
 
     function formatDate(value) {
       if (!value) return "Não definido";
@@ -38,7 +46,7 @@
 
     async function recordTaskActivity(action, description) {
       if (!taskInfo || !taskInfo.task) return;
-      await window.KanbanStorage.logActivity(taskInfo.task.boardId, taskId, action, description);
+      return window.KanbanStorage.logActivity(taskInfo.task.boardId, taskId, action, description);
     }
 
     async function updateTaskField(changes, description) {
@@ -60,10 +68,33 @@
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         checkbox.checked = Boolean(item.done);
+        checkbox.disabled = !canEditChecklist;
         checkbox.addEventListener("change", async () => {
-          await window.KanbanStorage.toggleChecklistItem(item.id, checkbox.checked);
-          await recordTaskActivity("task_updated", `Checklist da tarefa “${taskInfo.task.title}” atualizado.`);
-          await loadTask();
+          try {
+            await window.KanbanStorage.toggleChecklistItem(item.id, checkbox.checked);
+          } catch (error) {
+            checkbox.checked = Boolean(item.done);
+            checklistPermissionNote.textContent = error.message || "Não foi possível atualizar o checklist.";
+            checklistPermissionNote.hidden = false;
+            return;
+          }
+          item.done = checkbox.checked;
+          try {
+            const activity = await recordTaskActivity("task_updated", `Checklist da tarefa “${taskInfo.task.title}” atualizado.`);
+            if (activity) {
+              taskInfo.activities.unshift({
+                id: activity.id,
+                action: activity.action,
+                description: activity.description,
+                createdAt: activity.created_at
+              });
+              renderActivity(taskInfo.activities);
+            } else {
+              console.error("O checklist foi atualizado, mas a atividade não foi registrada.");
+            }
+          } catch (error) {
+            console.error("O checklist foi atualizado, mas a atividade não foi registrada.", error);
+          }
         });
         const text = document.createElement("span");
         text.textContent = item.title;
@@ -182,6 +213,41 @@
       });
     }
 
+    function closeSubtasksModal() {
+      aiSubtasksModal.hidden = true;
+      document.body.style.overflow = "";
+    }
+
+    function updateSubtaskSelection() {
+      const selectedCount = aiSubtasksList.querySelectorAll("input[type='checkbox']:checked").length;
+      aiSubtasksSave.disabled = selectedCount === 0 || !canEditChecklist;
+      aiSubtasksSave.textContent = selectedCount && !canEditChecklist
+        ? "Somente leitura"
+        : selectedCount
+        ? `Adicionar selecionadas (${selectedCount})`
+        : "Adicionar selecionadas";
+    }
+
+    function renderSubtaskSuggestions(items) {
+      aiSubtasksList.replaceChildren();
+      items.forEach(title => {
+        const label = document.createElement("label");
+        label.className = "ai-subtask-option";
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.value = title;
+        checkbox.addEventListener("change", () => {
+          label.classList.toggle("is-selected", checkbox.checked);
+          updateSubtaskSelection();
+        });
+        const text = document.createElement("span");
+        text.textContent = title;
+        label.append(checkbox, text);
+        aiSubtasksList.appendChild(label);
+      });
+      updateSubtaskSelection();
+    }
+
     async function loadTask() {
       taskInfo = await window.KanbanStorage.getTaskDetails(taskId);
       const task = taskInfo.task;
@@ -194,7 +260,21 @@
       taskStoryPointsEl.value = task.storyPoints ?? "";
 
       const boardId = task.boardId;
-      boardMembers = await window.KanbanStorage.getBoardMembers(boardId);
+      const [availableBoards, members] = await Promise.all([
+        window.KanbanStorage.getBoards(),
+        window.KanbanStorage.getBoardMembers(boardId)
+      ]);
+      boardMembers = members;
+      const currentBoard = availableBoards.find(item => item.id === boardId);
+      const currentMembership = boardMembers.find(item => item.userId === currentUser.id);
+      canEditChecklist = Boolean(
+        (currentBoard && currentBoard.ownerId === currentUser.id) ||
+        (currentMembership && ["OWNER", "EDITOR"].includes(currentMembership.role))
+      );
+      checklistFormEl.querySelectorAll("input, button").forEach(control => {
+        control.disabled = !canEditChecklist;
+      });
+      checklistPermissionNote.hidden = canEditChecklist;
       taskAssigneeEl.replaceChildren();
       const placeholder = document.createElement("option");
       placeholder.value = "";
@@ -217,6 +297,7 @@
       renderDoD(taskInfo.definitionOfDone);
       renderActivity(taskInfo.activities);
       renderLabels(taskInfo.labels);
+      breakSubtasksButton.disabled = false;
     }
 
     taskStatusEl.addEventListener("change", async () => {
@@ -248,13 +329,21 @@
       await updateTaskField({ story_points: value }, `Story points da tarefa “${taskInfo.task.title}” atualizados.`);
     });
 
-    document.getElementById("checklist-form").addEventListener("submit", async event => {
+    checklistFormEl.addEventListener("submit", async event => {
       event.preventDefault();
+      if (!canEditChecklist) return;
       const input = document.getElementById("checklist-input");
-      await window.KanbanStorage.addChecklistItem(taskId, input.value);
-      await recordTaskActivity("task_updated", `Uma subtarefa foi adicionada à tarefa “${taskInfo.task.title}”.`);
-      input.value = "";
-      await loadTask();
+      try {
+        await window.KanbanStorage.addChecklistItem(taskId, input.value);
+        await recordTaskActivity("task_updated", `Uma subtarefa foi adicionada à tarefa “${taskInfo.task.title}”.`);
+        input.value = "";
+        checklistPermissionNote.textContent = "Somente proprietários e editores podem alterar o checklist deste quadro.";
+        checklistPermissionNote.hidden = true;
+        await loadTask();
+      } catch (error) {
+        checklistPermissionNote.textContent = error.message || "Não foi possível salvar a subtarefa.";
+        checklistPermissionNote.hidden = false;
+      }
     });
 
     document.getElementById("comment-form").addEventListener("submit", async event => {
@@ -286,6 +375,81 @@
 
     openInBoardButton.addEventListener("click", () => {
       window.location.href = "index.html";
+    });
+
+    breakSubtasksButton.addEventListener("click", async () => {
+      if (!taskInfo || !taskInfo.task || breakSubtasksButton.disabled) return;
+      aiSubtasksModal.hidden = false;
+      document.body.style.overflow = "hidden";
+      aiSubtasksList.replaceChildren();
+      aiSubtasksStatus.textContent = "Analisando os dados desta tarefa...";
+      aiSubtasksStatus.dataset.type = "";
+      aiSubtasksSave.disabled = true;
+      breakSubtasksButton.disabled = true;
+      try {
+        const result = await window.KanbanAI.generateSubtasks(taskId);
+        if (!Array.isArray(result.suggestions) || !result.suggestions.length) {
+          throw new Error("A IA não retornou sugestões para esta tarefa.");
+        }
+        renderSubtaskSuggestions(result.suggestions);
+        aiSubtasksStatus.textContent = "Selecione as sugestões que deseja adicionar.";
+      } catch (error) {
+        aiSubtasksStatus.textContent = error.message || "Não foi possível gerar as subtasks.";
+        aiSubtasksStatus.dataset.type = "error";
+      } finally {
+        breakSubtasksButton.disabled = false;
+      }
+    });
+
+    document.getElementById("ai-subtasks-close").addEventListener("click", closeSubtasksModal);
+    document.getElementById("ai-subtasks-cancel").addEventListener("click", closeSubtasksModal);
+    aiSubtasksModal.addEventListener("click", event => {
+      if (event.target === aiSubtasksModal) closeSubtasksModal();
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && !aiSubtasksModal.hidden) closeSubtasksModal();
+    });
+    aiSubtasksSave.addEventListener("click", async () => {
+      const selected = [...aiSubtasksList.querySelectorAll("input[type='checkbox']:checked")]
+        .map(checkbox => checkbox.value);
+      if (!selected.length) return;
+      aiSubtasksSave.disabled = true;
+      aiSubtasksSave.textContent = "Salvando...";
+      try {
+        const result = await window.KanbanAI.saveSubtasks(taskId, selected);
+        if (!Array.isArray(result.saved) || result.saved.length !== selected.length) {
+          throw new Error("O serviço não confirmou todas as subtasks.");
+        }
+        try {
+          const activity = await recordTaskActivity("task_updated", `${selected.length} subtasks adicionadas à tarefa “${taskInfo.task.title}”.`);
+          if (activity) {
+            taskInfo.activities.unshift({
+              id: activity.id,
+              action: activity.action,
+              description: activity.description,
+              createdAt: activity.created_at
+            });
+            renderActivity(taskInfo.activities);
+          } else {
+            console.error("As subtasks foram salvas, mas a atividade não foi registrada.");
+          }
+        } catch (error) {
+          console.error("As subtasks foram salvas, mas a atividade não foi registrada.", error);
+        }
+        taskInfo.checklist.push(...result.saved.map(item => ({
+          id: item.id,
+          taskId: item.task_id,
+          title: item.title,
+          done: Boolean(item.done),
+          createdAt: item.created_at
+        })));
+        renderChecklist(taskInfo.checklist);
+        closeSubtasksModal();
+      } catch (error) {
+        aiSubtasksStatus.textContent = error.message || "Não foi possível salvar as subtasks no checklist.";
+        aiSubtasksStatus.dataset.type = "error";
+        updateSubtaskSelection();
+      }
     });
 
     logoutButton.addEventListener("click", async () => {

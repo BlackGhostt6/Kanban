@@ -63,6 +63,10 @@
           <span class="topbar-current">Quadro Kanban</span>
         </div>
         <div class="topbar-right">
+          <button class="ai-chat-toggle" id="ai-chat-toggle" type="button" aria-controls="ai-chat-panel" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5 13.8 9l5.7 1.8-5.7 1.8L12 18.5l-1.8-5.9L4.5 10.8 10.2 9 12 3.5Zm6.2 12.2.9 2.2 2.4.8-2.4.8-.9 2.3-.8-2.3-2.4-.8 2.4-.8.8-2.2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+            <span>Pergunte ao seu projeto</span>
+          </button>
           <div class="notification-center">
             <button class="notifications-toggle" id="notifications-toggle" type="button" aria-label="Notificações" aria-controls="notifications-panel" aria-expanded="false">
               <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -149,6 +153,39 @@
       </section>
       </main>
     </div>
+  </div>
+
+  <div class="ai-chat-backdrop" id="ai-chat-backdrop" hidden>
+    <aside class="ai-chat-panel" id="ai-chat-panel" role="dialog" aria-modal="true" aria-labelledby="ai-chat-title">
+      <header class="ai-chat-header">
+        <div class="ai-chat-heading">
+          <span class="ai-chat-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5 13.8 9l5.7 1.8-5.7 1.8L12 18.5l-1.8-5.9L4.5 10.8 10.2 9 12 3.5Zm6.2 12.2.9 2.2 2.4.8-2.4.8-.9 2.3-.8-2.3-2.4-.8 2.4-.8.8-2.2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          </span>
+          <div><h2 id="ai-chat-title">Pergunte ao seu projeto</h2><p>Respostas baseadas neste quadro</p></div>
+        </div>
+        <button class="icon-button" id="ai-chat-close" type="button" aria-label="Fechar assistente">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </button>
+      </header>
+      <div class="ai-chat-messages" id="ai-chat-messages" role="log" aria-live="polite" aria-relevant="additions">
+        <div class="ai-chat-welcome" id="ai-chat-welcome">Pergunte sobre tarefas, prazos, prioridades ou andamento do quadro selecionado.</div>
+      </div>
+      <div class="ai-chat-suggestions" id="ai-chat-suggestions" aria-label="Perguntas sugeridas">
+        <button type="button">O que está travado?</button>
+        <button type="button">O que falta para lançar?</button>
+        <button type="button">Quem tem mais tarefas?</button>
+      </div>
+      <p class="ai-chat-status" id="ai-chat-status" role="status" aria-live="polite"></p>
+      <form class="ai-chat-form" id="ai-chat-form">
+        <label class="sr-only" for="ai-chat-input">Sua pergunta sobre o projeto</label>
+        <textarea id="ai-chat-input" maxlength="2000" rows="2" placeholder="Pergunte ao seu projeto..." required></textarea>
+        <button class="primary-button ai-chat-send" id="ai-chat-send" type="submit" aria-label="Enviar pergunta">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </form>
+      <p class="ai-chat-footnote">A IA usa os dados disponíveis e pode cometer erros.</p>
+    </aside>
   </div>
 
   <div class="modal-backdrop" id="task-modal" hidden>
@@ -279,7 +316,9 @@
   <script src="js/supabase-config.js" defer></script>
   <script src="js/storage.js" defer></script>
   <script src="js/auth.js" defer></script>
+  <script src="js/ai-client.js" defer></script>
   <script src="js/notifications.js" defer></script>
   <script src="js/kanban.js" defer></script>
+  <script src="js/ai-chat.js" defer></script>
 </body>
 </html>
