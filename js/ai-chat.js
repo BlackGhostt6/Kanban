@@ -29,7 +29,9 @@
   function appendMessage(text, role, isLoading = false) {
     const bubble = document.createElement("div");
     bubble.className = `ai-chat-message ai-chat-message-${role}${isLoading ? " is-loading" : ""}`;
-    bubble.textContent = text;
+    bubble.textContent = role === "assistant"
+      ? window.KanbanText.toReadableText(text)
+      : text;
     messagesElement.appendChild(bubble);
     scrollToLatest();
     return bubble;
@@ -96,9 +98,10 @@
       if (typeof result.answer !== "string" || !result.answer.trim()) {
         throw new Error("O assistente retornou uma resposta vazia.");
       }
+      const answer = window.KanbanText.toReadableText(result.answer);
       loading.remove();
-      appendMessage(result.answer, "assistant");
-      conversation.push({ role: "user", text: question }, { role: "model", text: result.answer });
+      appendMessage(answer, "assistant");
+      conversation.push({ role: "user", text: question }, { role: "model", text: answer });
       if (conversation.length > 10) conversation.splice(0, conversation.length - 10);
       setStatus("");
     } catch (error) {

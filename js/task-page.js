@@ -252,7 +252,9 @@
       taskInfo = await window.KanbanStorage.getTaskDetails(taskId);
       const task = taskInfo.task;
       taskTitleEl.textContent = task.title;
-      taskDescriptionEl.textContent = task.description || "Sem descrição detalhada.";
+      taskDescriptionEl.textContent = task.description
+        ? window.KanbanText.toReadableText(task.description)
+        : "Sem descrição detalhada.";
       document.title = `${task.title} | Dayboard`;
       taskStatusEl.value = task.status;
       taskPriorityEl.value = task.priority;

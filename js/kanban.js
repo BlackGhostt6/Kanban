@@ -225,7 +225,7 @@
 
       const description = document.createElement("p");
       description.className = "task-description";
-      description.textContent = task.description || "";
+      description.textContent = window.KanbanText.toReadableText(task.description || "");
 
       const footer = document.createElement("div");
       footer.className = "task-footer";
@@ -267,7 +267,7 @@
       submitLabel.textContent = task ? "Salvar alterações" : "Salvar Tarefa";
       if (task) {
         titleInput.value = task.title;
-        descriptionInput.value = task.description;
+        descriptionInput.value = window.KanbanText.toReadableText(task.description);
       }
       populateAssignees(task ? task.assigneeId : "");
       priorityInput.value = task ? task.priority : "media";
@@ -627,7 +627,7 @@
         return;
       }
       titleInput.setCustomValidity("");
-      const description = descriptionInput.value.trim();
+      const description = window.KanbanText.toReadableText(descriptionInput.value).trim();
       const submitButton = taskForm.querySelector("button[type='submit']");
       submitButton.disabled = true;
       const taskValues = {
