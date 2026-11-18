@@ -36,9 +36,9 @@
         <div class="board-selector-wrap">
           <select id="board-selector" aria-label="Meus quadros e compartilhados comigo"></select>
         </div>
-        <button class="sidebar-link sidebar-action" id="invite-member-button" type="button" aria-label="Compartilhar quadro" title="Compartilhar quadro">
+        <button class="sidebar-link sidebar-action" id="invite-member-button" type="button" aria-label="Gerenciar membros" title="Gerenciar membros" hidden>
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20m6-9a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm8-3v6m-3-3h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span>Compartilhar quadro</span>
+          <span>Membros</span>
         </button>
       </div>
 
@@ -102,7 +102,7 @@
             <h1 id="page-title">Quadro de tarefas</h1>
             <p class="subtitle">Organize o trabalho e acompanhe cada etapa do projeto.</p>
           </div>
-          <button class="primary-button" id="add-task-button" type="button">
+          <button class="primary-button" id="add-task-button" type="button" hidden>
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             Nova tarefa
           </button>
@@ -121,7 +121,7 @@
             <span class="count" data-count="todo" aria-label="0 tarefas">0</span>
           </header>
           <div class="cards" data-cards="todo" aria-label="Tarefas a fazer"></div>
-          <button class="column-add" type="button" data-open-modal>
+          <button class="column-add" type="button" data-open-modal hidden>
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
             Adicionar tarefa
           </button>
@@ -133,7 +133,7 @@
             <span class="count" data-count="progress" aria-label="0 tarefas">0</span>
           </header>
           <div class="cards" data-cards="progress" aria-label="Tarefas em andamento"></div>
-          <button class="column-add" type="button" data-open-modal>
+          <button class="column-add" type="button" data-open-modal hidden>
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
             Adicionar tarefa
           </button>
@@ -145,7 +145,7 @@
             <span class="count" data-count="done" aria-label="0 tarefas">0</span>
           </header>
           <div class="cards" data-cards="done" aria-label="Tarefas concluídas"></div>
-          <button class="column-add" type="button" data-open-modal>
+          <button class="column-add" type="button" data-open-modal hidden>
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
             Adicionar tarefa
           </button>
@@ -284,7 +284,7 @@
   <div class="modal-backdrop" id="share-modal" hidden>
     <section class="modal" role="dialog" aria-modal="true" aria-labelledby="share-title">
       <div class="modal-heading">
-        <div><h2 id="share-title">Compartilhar quadro</h2><p class="modal-intro">Convide pessoas por e-mail e defina a permissão.</p></div>
+        <div><h2 id="share-title">Gerenciar membros</h2><p class="modal-intro">Convide pessoas, ajuste permissões ou remova o acesso.</p></div>
         <button class="icon-button" id="close-share-modal-button" type="button" aria-label="Fechar compartilhamento">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
         </button>
@@ -307,6 +307,11 @@
           <button class="primary-button" type="submit">Salvar convite</button>
         </div>
       </form>
+      <section class="member-management-section" aria-labelledby="members-title">
+        <h3 id="members-title">Membros e convites</h3>
+        <p id="members-status" class="member-management-status" role="status" aria-live="polite"></p>
+        <div id="members-list" class="member-list"></div>
+      </section>
     </section>
   </div>
 

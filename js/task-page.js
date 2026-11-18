@@ -25,6 +25,9 @@
     const taskStoryPointsEl = document.getElementById("task-story-points");
     const taskLabelsEl = document.getElementById("task-labels");
     const checklistFormEl = document.getElementById("checklist-form");
+    const commentFormEl = document.getElementById("comment-form");
+    const acceptanceFormEl = document.getElementById("acceptance-form");
+    const dodFormEl = document.getElementById("dod-form");
     const checklistPermissionNote = document.getElementById("checklist-permission-note");
     const openInBoardButton = document.getElementById("open-in-board");
     const breakSubtasksButton = document.getElementById("break-subtasks-button");
@@ -35,7 +38,7 @@
     const logoutButton = document.getElementById("logout-button");
     let taskInfo = null;
     let boardMembers = [];
-    let canEditChecklist = false;
+    let canEditBoard = false;
 
     function formatDate(value) {
       if (!value) return "Não definido";
@@ -50,6 +53,7 @@
     }
 
     async function updateTaskField(changes, description) {
+      if (!canEditBoard) return;
       await window.KanbanStorage.updateTask(taskId, changes);
       await recordTaskActivity("task_updated", description);
       await loadTask();
@@ -68,8 +72,9 @@
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         checkbox.checked = Boolean(item.done);
-        checkbox.disabled = !canEditChecklist;
+        checkbox.disabled = !canEditBoard;
         checkbox.addEventListener("change", async () => {
+          if (!canEditBoard) return;
           try {
             await window.KanbanStorage.toggleChecklistItem(item.id, checkbox.checked);
           } catch (error) {
@@ -136,7 +141,9 @@
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         checkbox.checked = Boolean(item.done);
+        checkbox.disabled = !canEditBoard;
         checkbox.addEventListener("change", async () => {
+          if (!canEditBoard) return;
           await window.KanbanStorage.updateAcceptanceCriterion(item.id, checkbox.checked);
           await recordTaskActivity("task_updated", `Critérios de aceite da tarefa “${taskInfo.task.title}” atualizados.`);
           await loadTask();
@@ -160,7 +167,9 @@
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         checkbox.checked = Boolean(item.done);
+        checkbox.disabled = !canEditBoard;
         checkbox.addEventListener("change", async () => {
+          if (!canEditBoard) return;
           await window.KanbanStorage.updateDefinitionOfDone(item.id, checkbox.checked);
           await recordTaskActivity("task_updated", `Definition of Done da tarefa “${taskInfo.task.title}” atualizado.`);
           await loadTask();
@@ -194,6 +203,14 @@
       taskLabelsEl.replaceChildren();
       const availableLabels = ["Bug", "Feature", "Urgente"];
       availableLabels.forEach(label => {
+        if (!canEditBoard) {
+          if (!labels.includes(label)) return;
+          const tag = document.createElement("span");
+          tag.className = "tag";
+          tag.textContent = label;
+          taskLabelsEl.appendChild(tag);
+          return;
+        }
         const button = document.createElement("button");
         button.type = "button";
         button.className = "small-button";
@@ -220,8 +237,8 @@
 
     function updateSubtaskSelection() {
       const selectedCount = aiSubtasksList.querySelectorAll("input[type='checkbox']:checked").length;
-      aiSubtasksSave.disabled = selectedCount === 0 || !canEditChecklist;
-      aiSubtasksSave.textContent = selectedCount && !canEditChecklist
+      aiSubtasksSave.disabled = selectedCount === 0 || !canEditBoard;
+      aiSubtasksSave.textContent = selectedCount && !canEditBoard
         ? "Somente leitura"
         : selectedCount
         ? `Adicionar selecionadas (${selectedCount})`
@@ -269,14 +286,22 @@
       boardMembers = members;
       const currentBoard = availableBoards.find(item => item.id === boardId);
       const currentMembership = boardMembers.find(item => item.userId === currentUser.id);
-      canEditChecklist = Boolean(
+      const canManageBoard = Boolean(
         (currentBoard && currentBoard.ownerId === currentUser.id) ||
-        (currentMembership && ["OWNER", "EDITOR"].includes(currentMembership.role))
+        (currentMembership && currentMembership.role === "OWNER")
       );
-      checklistFormEl.querySelectorAll("input, button").forEach(control => {
-        control.disabled = !canEditChecklist;
+      canEditBoard = Boolean(
+        canManageBoard ||
+        (currentMembership && currentMembership.role === "EDITOR")
+      );
+      [checklistFormEl, commentFormEl, acceptanceFormEl, dodFormEl].forEach(form => {
+        form.hidden = !canEditBoard;
       });
-      checklistPermissionNote.hidden = canEditChecklist;
+      [taskStatusEl, taskPriorityEl, taskDueDateEl, taskAssigneeEl, taskStoryPointsEl].forEach(control => {
+        control.disabled = !canEditBoard;
+      });
+      breakSubtasksButton.hidden = !canEditBoard;
+      checklistPermissionNote.hidden = canEditBoard;
       taskAssigneeEl.replaceChildren();
       const placeholder = document.createElement("option");
       placeholder.value = "";
@@ -299,10 +324,11 @@
       renderDoD(taskInfo.definitionOfDone);
       renderActivity(taskInfo.activities);
       renderLabels(taskInfo.labels);
-      breakSubtasksButton.disabled = false;
+      breakSubtasksButton.disabled = !canEditBoard;
     }
 
     taskStatusEl.addEventListener("change", async () => {
+      if (!canEditBoard) return;
       const previousStatus = taskInfo.task.status;
       const nextStatus = taskStatusEl.value;
       await window.KanbanStorage.updateTask(taskId, { status: taskStatusEl.value });
@@ -314,26 +340,30 @@
     });
 
     taskPriorityEl.addEventListener("change", async () => {
+      if (!canEditBoard) return;
       await updateTaskField({ priority: taskPriorityEl.value }, `Prioridade da tarefa “${taskInfo.task.title}” atualizada.`);
     });
 
     taskDueDateEl.addEventListener("change", async () => {
+      if (!canEditBoard) return;
       await updateTaskField({ due_date: taskDueDateEl.value || null }, `Prazo da tarefa “${taskInfo.task.title}” atualizado.`);
     });
 
     taskAssigneeEl.addEventListener("change", async () => {
+      if (!canEditBoard) return;
       const selected = taskAssigneeEl.value || null;
       await updateTaskField({ assignee_id: selected }, `Responsável da tarefa “${taskInfo.task.title}” atualizado.`);
     });
 
     taskStoryPointsEl.addEventListener("change", async () => {
+      if (!canEditBoard) return;
       const value = taskStoryPointsEl.value === "" ? null : Number(taskStoryPointsEl.value);
       await updateTaskField({ story_points: value }, `Story points da tarefa “${taskInfo.task.title}” atualizados.`);
     });
 
     checklistFormEl.addEventListener("submit", async event => {
       event.preventDefault();
-      if (!canEditChecklist) return;
+      if (!canEditBoard) return;
       const input = document.getElementById("checklist-input");
       try {
         await window.KanbanStorage.addChecklistItem(taskId, input.value);
@@ -350,6 +380,7 @@
 
     document.getElementById("comment-form").addEventListener("submit", async event => {
       event.preventDefault();
+      if (!canEditBoard) return;
       const input = document.getElementById("comment-input");
       await window.KanbanStorage.addTaskComment(taskId, input.value);
       await recordTaskActivity("comment_added", `Novo comentário na tarefa “${taskInfo.task.title}”.`);
@@ -359,6 +390,7 @@
 
     document.getElementById("acceptance-form").addEventListener("submit", async event => {
       event.preventDefault();
+      if (!canEditBoard) return;
       const input = document.getElementById("acceptance-input");
       await window.KanbanStorage.addAcceptanceCriterion(taskId, input.value);
       await recordTaskActivity("task_updated", `Um critério de aceite foi adicionado à tarefa “${taskInfo.task.title}”.`);
@@ -368,6 +400,7 @@
 
     document.getElementById("dod-form").addEventListener("submit", async event => {
       event.preventDefault();
+      if (!canEditBoard) return;
       const input = document.getElementById("dod-input");
       await window.KanbanStorage.addDefinitionOfDone(taskId, input.value);
       await recordTaskActivity("task_updated", `Um item de Definition of Done foi adicionado à tarefa “${taskInfo.task.title}”.`);
@@ -380,7 +413,7 @@
     });
 
     breakSubtasksButton.addEventListener("click", async () => {
-      if (!taskInfo || !taskInfo.task || breakSubtasksButton.disabled) return;
+      if (!canEditBoard || !taskInfo || !taskInfo.task || breakSubtasksButton.disabled) return;
       aiSubtasksModal.hidden = false;
       document.body.style.overflow = "hidden";
       aiSubtasksList.replaceChildren();
@@ -399,7 +432,7 @@
         aiSubtasksStatus.textContent = error.message || "Não foi possível gerar as subtasks.";
         aiSubtasksStatus.dataset.type = "error";
       } finally {
-        breakSubtasksButton.disabled = false;
+        breakSubtasksButton.disabled = !canEditBoard;
       }
     });
 
@@ -412,6 +445,7 @@
       if (event.key === "Escape" && !aiSubtasksModal.hidden) closeSubtasksModal();
     });
     aiSubtasksSave.addEventListener("click", async () => {
+      if (!canEditBoard) return;
       const selected = [...aiSubtasksList.querySelectorAll("input[type='checkbox']:checked")]
         .map(checkbox => checkbox.value);
       if (!selected.length) return;

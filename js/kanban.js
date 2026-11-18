@@ -37,6 +37,12 @@
     const shareForm = document.getElementById("share-form");
     const shareEmailInput = document.getElementById("share-email");
     const shareRoleInput = document.getElementById("share-role");
+    const membersList = document.getElementById("members-list");
+    const membersStatus = document.getElementById("members-status");
+    const addTaskButton = document.getElementById("add-task-button");
+    const newBoardButton = document.getElementById("new-board-button");
+    const inviteMemberButton = document.getElementById("invite-member-button");
+    const columnAddButtons = [...document.querySelectorAll("[data-open-modal]")];
 
     document.getElementById("welcome-name").textContent = currentUser.name;
     document.getElementById("user-avatar").textContent = currentUser.name
@@ -52,12 +58,14 @@
     let lastFocusedElement = null;
     let boardReady = false;
     let confirmResolver = null;
+    let canEditActiveBoard = false;
+    let canManageActiveBoard = false;
 
     const boardActionButtons = [
-      document.getElementById("add-task-button"),
-      document.getElementById("new-board-button"),
-      document.getElementById("invite-member-button"),
-      ...document.querySelectorAll("[data-open-modal]")
+      addTaskButton,
+      newBoardButton,
+      inviteMemberButton,
+      ...columnAddButtons
     ];
 
     function setBoardReady(ready) {
@@ -65,6 +73,23 @@
       boardActionButtons.forEach(button => { button.disabled = !ready; });
       boardSelector.disabled = !ready;
       board.setAttribute("aria-busy", String(!ready));
+    }
+
+    function updateBoardPermissions() {
+      const currentMembership = boardMembers.find(member => member.userId === currentUser.id);
+      canManageActiveBoard = Boolean(
+        activeBoard && (
+          activeBoard.ownerId === currentUser.id ||
+          (currentMembership && currentMembership.role === "OWNER")
+        )
+      );
+      canEditActiveBoard = Boolean(
+        canManageActiveBoard ||
+        (currentMembership && currentMembership.role === "EDITOR")
+      );
+      addTaskButton.hidden = !canEditActiveBoard;
+      columnAddButtons.forEach(button => { button.hidden = !canEditActiveBoard; });
+      inviteMemberButton.hidden = !canManageActiveBoard;
     }
 
     setBoardReady(false);
@@ -156,10 +181,10 @@
 
     function createTaskCard(task) {
       const card = document.createElement("article");
-      card.className = "task-card";
-      card.draggable = true;
+      card.className = `task-card${canEditActiveBoard ? "" : " is-read-only"}`;
+      card.draggable = canEditActiveBoard;
       card.dataset.taskId = task.id;
-      card.setAttribute("aria-label", `${task.title}, status ${STATUS_LABELS[task.status] || task.status}. Arraste para mover entre colunas.`);
+      card.setAttribute("aria-label", `${task.title}, status ${STATUS_LABELS[task.status] || task.status}.${canEditActiveBoard ? " Arraste para mover entre colunas." : ""}`);
 
       const cardTop = document.createElement("div");
       cardTop.className = "task-card-top";
@@ -171,29 +196,35 @@
       title.textContent = task.title;
       titleWrap.appendChild(title);
 
+      cardTop.appendChild(titleWrap);
+      if (canEditActiveBoard) {
+        const actions = document.createElement("div");
+        actions.className = "task-actions";
+        const editButton = document.createElement("button");
+        editButton.className = "edit-button";
+        editButton.type = "button";
+        editButton.setAttribute("aria-label", `Editar tarefa: ${task.title}`);
+        editButton.title = "Editar tarefa";
+        editButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m14 5 5 5M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "delete-button";
+        deleteButton.type = "button";
+        deleteButton.setAttribute("aria-label", `Excluir tarefa: ${task.title}`);
+        deleteButton.title = "Excluir tarefa";
+        deleteButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 7h15M10 11v6M14 11v6M6.5 7l.8 13h9.4l.8-13M9 7V4.5h6V7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        actions.append(editButton, deleteButton);
+        cardTop.appendChild(actions);
+
+        editButton.addEventListener("click", () => openModal(task.id));
+        deleteButton.addEventListener("click", () => deleteTask(task.id));
+      }
+
       const link = document.createElement("a");
       link.className = "task-link";
       link.href = `task.html?id=${task.id}`;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
       link.textContent = "Abrir";
-
-      const actions = document.createElement("div");
-      actions.className = "task-actions";
-      const editButton = document.createElement("button");
-      editButton.className = "edit-button";
-      editButton.type = "button";
-      editButton.setAttribute("aria-label", `Editar tarefa: ${task.title}`);
-      editButton.title = "Editar tarefa";
-      editButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m14 5 5 5M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-      const deleteButton = document.createElement("button");
-      deleteButton.className = "delete-button";
-      deleteButton.type = "button";
-      deleteButton.setAttribute("aria-label", `Excluir tarefa: ${task.title}`);
-      deleteButton.title = "Excluir tarefa";
-      deleteButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 7h15M10 11v6M14 11v6M6.5 7l.8 13h9.4l.8-13M9 7V4.5h6V7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-      actions.append(editButton, deleteButton);
-      cardTop.append(titleWrap, actions);
 
       const meta = document.createElement("div");
       meta.className = "task-meta";
@@ -239,24 +270,24 @@
       footer.append(statusTag, date);
 
       card.append(cardTop, meta, description, footer, link);
-
-      card.addEventListener("dragstart", event => {
-        draggedTaskId = task.id;
-        event.dataTransfer.effectAllowed = "move";
-        event.dataTransfer.setData("text/plain", task.id);
-        requestAnimationFrame(() => card.classList.add("is-dragging"));
-      });
-      card.addEventListener("dragend", () => {
-        draggedTaskId = null;
-        card.classList.remove("is-dragging");
-        document.querySelectorAll(".column.drag-over").forEach(column => column.classList.remove("drag-over"));
-      });
-      editButton.addEventListener("click", () => openModal(task.id));
-      deleteButton.addEventListener("click", () => deleteTask(task.id));
+      if (canEditActiveBoard) {
+        card.addEventListener("dragstart", event => {
+          draggedTaskId = task.id;
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("text/plain", task.id);
+          requestAnimationFrame(() => card.classList.add("is-dragging"));
+        });
+        card.addEventListener("dragend", () => {
+          draggedTaskId = null;
+          card.classList.remove("is-dragging");
+          document.querySelectorAll(".column.drag-over").forEach(column => column.classList.remove("drag-over"));
+        });
+      }
       return card;
     }
 
     function openModal(taskId = null) {
+      if (!canEditActiveBoard) return;
       const task = taskId ? tasks.find(item => item.id === taskId) : null;
       if (taskId && !task) return;
       lastFocusedElement = document.activeElement;
@@ -344,7 +375,7 @@
       const resolve = confirmResolver;
       confirmResolver = null;
       confirmModal.hidden = true;
-      document.body.style.overflow = "";
+      document.body.style.overflow = shareModal.hidden ? "" : "hidden";
       resolve(confirmed);
     }
 
@@ -379,6 +410,7 @@
       columns = await window.KanbanStorage.getBoardColumns(activeBoard.id);
       tasks = await window.KanbanStorage.getTasks(activeBoard.id);
       renderBoardList();
+      updateBoardPermissions();
       renderBoard();
     }
 
@@ -402,6 +434,7 @@
         columns = acceptedColumns;
         tasks = acceptedTasks;
         renderBoardList();
+        updateBoardPermissions();
         renderBoard();
         showToast(`Quadro “${activeBoard.name}” adicionado aos seus espaços.`);
       } catch (error) {
@@ -412,6 +445,7 @@
     });
 
     async function addTask(taskValues) {
+      if (!canEditActiveBoard) return false;
       setSyncStatus("Salvando...");
       try {
         if (!boardReady || !activeBoard || !activeBoard.id) {
@@ -441,6 +475,7 @@
     }
 
     async function updateTask(taskId, changes) {
+      if (!canEditActiveBoard) return false;
       const task = tasks.find(item => item.id === taskId);
       if (!task) return false;
       setSyncStatus("Salvando...");
@@ -469,6 +504,7 @@
     }
 
     async function deleteTask(taskId) {
+      if (!canEditActiveBoard) return;
       const task = tasks.find(item => item.id === taskId);
       if (!task || !(await confirmAction("Excluir tarefa?", `Deseja excluir “${task.title}”?`, "Excluir"))) return;
       setSyncStatus("Salvando...");
@@ -491,7 +527,7 @@
     }
 
     async function moveTask(taskId, nextStatus) {
-      if (!STATUSES.includes(nextStatus)) return;
+      if (!canEditActiveBoard || !STATUSES.includes(nextStatus)) return;
       const task = tasks.find(item => item.id === taskId);
       if (!task || task.status === nextStatus) return;
       setSyncStatus("Salvando...");
@@ -513,21 +549,114 @@
       boards = await window.KanbanStorage.getBoards();
       activeBoard = created;
       window.localStorage.setItem("dayboard-active-board", activeBoard.id);
+      boardMembers = await window.KanbanStorage.getBoardMembers(activeBoard.id);
       columns = await window.KanbanStorage.getBoardColumns(activeBoard.id);
       tasks = await window.KanbanStorage.getTasks(activeBoard.id);
       renderBoardList();
+      updateBoardPermissions();
       renderBoard();
       showToast(`Quadro “${created.name}” criado.`);
       return created;
     }
 
+    function renderBoardMembers() {
+      membersList.replaceChildren();
+      if (!boardMembers.length) {
+        const empty = document.createElement("p");
+        empty.className = "member-management-status";
+        empty.textContent = "Este quadro ainda não tem membros ou convites.";
+        membersList.appendChild(empty);
+        return;
+      }
+
+      const roleNames = { OWNER: "Dono", EDITOR: "Editor", VIEWER: "Leitor" };
+      boardMembers.forEach(member => {
+        const item = document.createElement("article");
+        item.className = "member-item";
+
+        const copy = document.createElement("div");
+        copy.className = "member-copy";
+        const name = document.createElement("strong");
+        name.textContent = member.profile ? member.profile.name : member.email;
+        const detail = document.createElement("span");
+        detail.textContent = member.userId
+          ? (roleNames[member.role] || member.role)
+          : `Convite pendente · ${roleNames[member.role] || member.role}`;
+        copy.append(name, detail);
+
+        const roleSelect = document.createElement("select");
+        roleSelect.className = "member-role-select";
+        roleSelect.setAttribute("aria-label", `Permissão de ${member.email}`);
+        [
+          { value: "OWNER", label: "Dono" },
+          { value: "EDITOR", label: "Editor" },
+          { value: "VIEWER", label: "Leitor" }
+        ].forEach(role => {
+          const option = document.createElement("option");
+          option.value = role.value;
+          option.textContent = role.label;
+          roleSelect.appendChild(option);
+        });
+        roleSelect.value = member.role;
+        const isCurrentManager = member.userId === currentUser.id;
+        roleSelect.disabled = isCurrentManager;
+        roleSelect.addEventListener("change", async () => {
+          const nextRole = roleSelect.value;
+          roleSelect.disabled = true;
+          try {
+            await window.KanbanStorage.updateMemberRole(activeBoard.id, member.id, nextRole);
+            boardMembers = await window.KanbanStorage.getBoardMembers(activeBoard.id);
+            renderBoardMembers();
+            showToast(`Permissão de ${member.email} atualizada.`);
+          } catch (error) {
+            showToast(`Não foi possível alterar a permissão: ${error.message}`, true);
+            roleSelect.value = member.role;
+            roleSelect.disabled = isCurrentManager;
+          }
+        });
+
+        const removeButton = document.createElement("button");
+        removeButton.className = "member-remove-button";
+        removeButton.type = "button";
+        removeButton.textContent = member.userId ? "Remover" : "Cancelar convite";
+        removeButton.disabled = isCurrentManager;
+        removeButton.addEventListener("click", async () => {
+          if (isCurrentManager || !canManageActiveBoard) return;
+          const action = member.userId ? "Remover membro?" : "Cancelar convite?";
+          const message = member.userId
+            ? `Remover ${member.email} deste quadro?`
+            : `Cancelar o convite enviado para ${member.email}?`;
+          if (!(await confirmAction(action, message, member.userId ? "Remover" : "Cancelar convite"))) return;
+          try {
+            await window.KanbanStorage.removeMember(activeBoard.id, member.id);
+            boardMembers = await window.KanbanStorage.getBoardMembers(activeBoard.id);
+            renderBoardMembers();
+            renderBoard();
+            showToast(member.userId ? "Membro removido do quadro." : "Convite cancelado.");
+          } catch (error) {
+            showToast(`Não foi possível remover o acesso: ${error.message}`, true);
+          }
+        });
+        item.append(copy, roleSelect, removeButton);
+        membersList.appendChild(item);
+      });
+    }
+
     async function openInviteModal() {
-      if (!activeBoard) return;
+      if (!activeBoard || !canManageActiveBoard) return;
       shareEmailInput.value = "";
       shareRoleInput.value = "EDITOR";
       shareModal.hidden = false;
       document.body.style.overflow = "hidden";
-      requestAnimationFrame(() => shareEmailInput.focus());
+      membersStatus.textContent = "Carregando membros...";
+      try {
+        boardMembers = await window.KanbanStorage.getBoardMembers(activeBoard.id);
+        renderBoardMembers();
+        membersStatus.textContent = "";
+        requestAnimationFrame(() => shareEmailInput.focus());
+      } catch (error) {
+        membersStatus.textContent = `Não foi possível carregar os membros: ${error.message}`;
+      }
     }
 
     function closeShareModal() {
@@ -569,12 +698,25 @@
       const boardId = event.target.value;
       const selectedBoard = boards.find(item => item.id === boardId);
       if (!selectedBoard) return;
+      setBoardReady(false);
       activeBoard = selectedBoard;
       window.localStorage.setItem("dayboard-active-board", activeBoard.id);
-      boardMembers = await window.KanbanStorage.getBoardMembers(activeBoard.id);
-      columns = await window.KanbanStorage.getBoardColumns(activeBoard.id);
-      tasks = await window.KanbanStorage.getTasks(activeBoard.id);
+      boardMembers = [];
+      columns = [];
+      tasks = [];
+      updateBoardPermissions();
       renderBoard();
+      try {
+        boardMembers = await window.KanbanStorage.getBoardMembers(activeBoard.id);
+        columns = await window.KanbanStorage.getBoardColumns(activeBoard.id);
+        tasks = await window.KanbanStorage.getTasks(activeBoard.id);
+        updateBoardPermissions();
+        renderBoard();
+        setBoardReady(true);
+      } catch (error) {
+        setSyncStatus("Falha na sincronização");
+        showToast(`Não foi possível carregar o quadro: ${error.message}`, true);
+      }
     });
 
     document.getElementById("new-board-button").addEventListener("click", () => {
@@ -600,7 +742,7 @@
 
     shareForm.addEventListener("submit", async event => {
       event.preventDefault();
-      if (!activeBoard) return;
+      if (!activeBoard || !canManageActiveBoard) return;
       if (!shareEmailInput.value.trim()) {
         shareEmailInput.setCustomValidity("Informe o e-mail.");
         shareEmailInput.reportValidity();
@@ -619,6 +761,7 @@
 
     taskForm.addEventListener("submit", async event => {
       event.preventDefault();
+      if (!canEditActiveBoard) return;
       if (!taskForm.reportValidity()) return;
       const title = titleInput.value.trim();
       if (!title) {
@@ -655,17 +798,21 @@
 
     board.querySelectorAll(".column").forEach(column => {
       column.addEventListener("dragenter", event => {
+        if (!canEditActiveBoard) return;
         event.preventDefault();
         column.classList.add("drag-over");
       });
       column.addEventListener("dragover", event => {
+        if (!canEditActiveBoard) return;
         event.preventDefault();
         event.dataTransfer.dropEffect = "move";
       });
       column.addEventListener("dragleave", event => {
+        if (!canEditActiveBoard) return;
         if (!column.contains(event.relatedTarget)) column.classList.remove("drag-over");
       });
       column.addEventListener("drop", event => {
+        if (!canEditActiveBoard) return;
         event.preventDefault();
         column.classList.remove("drag-over");
         const taskId = event.dataTransfer.getData("text/plain") || draggedTaskId;

@@ -198,6 +198,7 @@
     const normalizedEmail = String(email || "").trim().toLowerCase();
     if (!normalizedEmail) throw new Error("Informe um e-mail para convidar alguém.");
     if (!/[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}/.test(normalizedEmail)) throw new Error("Informe um e-mail válido.");
+    if (!["OWNER", "EDITOR", "VIEWER"].includes(role)) throw new Error("Selecione uma permissão válida.");
 
     const { data: userData } = await client.auth.getUser();
     if (!userData.user) throw new Error("Você precisa estar autenticado para convidar membros.");
@@ -266,6 +267,7 @@
   }
 
   async function updateMemberRole(boardId, memberId, role) {
+    if (!["OWNER", "EDITOR", "VIEWER"].includes(role)) throw new Error("Selecione uma permissão válida.");
     const client = getClient();
     const { data, error } = await client
       .from("board_members")
