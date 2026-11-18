@@ -444,6 +444,20 @@
       }
     });
 
+    window.addEventListener("dayboard:ai-tasks-updated", async event => {
+      const boardId = event.detail && event.detail.boardId;
+      if (!boardId || !activeBoard || activeBoard.id !== boardId) return;
+      try {
+        const updatedTasks = await window.KanbanStorage.getTasks(boardId);
+        if (!activeBoard || activeBoard.id !== boardId) return;
+        tasks = updatedTasks;
+        renderBoard();
+        setSyncStatus("Sincronizado na nuvem");
+      } catch (error) {
+        showToast(`A IA alterou a tarefa, mas o quadro não atualizou: ${error.message}`, true);
+      }
+    });
+
     async function addTask(taskValues) {
       if (!canEditActiveBoard) return false;
       setSyncStatus("Salvando...");

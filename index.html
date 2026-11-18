@@ -162,14 +162,14 @@
           <span class="ai-chat-mark" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5 13.8 9l5.7 1.8-5.7 1.8L12 18.5l-1.8-5.9L4.5 10.8 10.2 9 12 3.5Zm6.2 12.2.9 2.2 2.4.8-2.4.8-.9 2.3-.8-2.3-2.4-.8 2.4-.8.8-2.2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
           </span>
-          <div><h2 id="ai-chat-title">Pergunte ao seu projeto</h2><p>Respostas baseadas neste quadro</p></div>
+          <div><h2 id="ai-chat-title">Pergunte ao seu projeto</h2><p>Respostas e atualizações deste quadro</p></div>
         </div>
         <button class="icon-button" id="ai-chat-close" type="button" aria-label="Fechar assistente">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
         </button>
       </header>
       <div class="ai-chat-messages" id="ai-chat-messages" role="log" aria-live="polite" aria-relevant="additions">
-        <div class="ai-chat-welcome" id="ai-chat-welcome">Pergunte sobre tarefas, prazos, prioridades ou andamento do quadro selecionado.</div>
+        <div class="ai-chat-welcome" id="ai-chat-welcome">Pergunte sobre o quadro ou peça para a IA criar e editar uma tarefa. Ela não pode excluir tarefas.</div>
       </div>
       <div class="ai-chat-suggestions" id="ai-chat-suggestions" aria-label="Perguntas sugeridas">
         <button type="button">O que está travado?</button>
@@ -179,12 +179,12 @@
       <p class="ai-chat-status" id="ai-chat-status" role="status" aria-live="polite"></p>
       <form class="ai-chat-form" id="ai-chat-form">
         <label class="sr-only" for="ai-chat-input">Sua pergunta sobre o projeto</label>
-        <textarea id="ai-chat-input" maxlength="2000" rows="2" placeholder="Pergunte ao seu projeto..." required></textarea>
+        <textarea id="ai-chat-input" maxlength="2000" rows="2" placeholder="Pergunte ou peça para criar/editar uma tarefa..." required></textarea>
         <button class="primary-button ai-chat-send" id="ai-chat-send" type="submit" aria-label="Enviar pergunta">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </form>
-      <p class="ai-chat-footnote">A IA usa os dados disponíveis e pode cometer erros.</p>
+      <p class="ai-chat-footnote">A IA pode criar e editar tarefas a seu pedido, mas não excluí-las. Confira as alterações.</p>
     </aside>
   </div>
 

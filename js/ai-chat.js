@@ -99,6 +99,11 @@
         throw new Error("O assistente retornou uma resposta vazia.");
       }
       const answer = window.KanbanText.toReadableText(result.answer);
+      if (Array.isArray(result.actions) && result.actions.length) {
+        window.dispatchEvent(new CustomEvent("dayboard:ai-tasks-updated", {
+          detail: { boardId, actions: result.actions }
+        }));
+      }
       loading.remove();
       appendMessage(answer, "assistant");
       conversation.push({ role: "user", text: question }, { role: "model", text: answer });
